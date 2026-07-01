@@ -103,7 +103,8 @@
         box-shadow: 0 0 0 3px rgba(61, 58, 138, 0.12);
     }
 
-    .field-invalid {
+    .field-invalid,
+    [data-invalid='true'] .field {
         border-color: var(--color-danger);
         box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.1);
     }

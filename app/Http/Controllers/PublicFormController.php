@@ -25,7 +25,7 @@ class PublicFormController extends Controller
         $form->load('evaluations.questions.options');
 
         return Inertia::render('public/form', [
-            'form' => ['name' => $form->name, 'slug' => $form->slug],
+            'form' => ['name' => $form->name, 'slug' => $form->slug, 'description' => $form->description],
             'campaign' => ['id' => $campaign->id, 'name' => $campaign->name],
             'evaluations' => $form->evaluations->map(fn ($evaluation) => [
                 'id' => $evaluation->id,
