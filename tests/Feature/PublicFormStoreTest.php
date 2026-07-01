@@ -29,6 +29,7 @@ function validProfile(array $extra = []): array
         'age' => 30, 'sex' => 'femenino', 'marital_status' => 'soltero',
         'children_count' => 0, 'cohabitation_group' => 'solo',
         'work_email' => 'ana@empresa.test', 'phone' => '+54 11 1234-5678',
+        'authorizes_medical_access' => '1',
     ], $extra);
 }
 
@@ -44,6 +45,28 @@ it('stores a submission with answers and computed result, then redirects to than
         ->and($submission->answers)->toHaveCount(1)
         ->and($submission->results->first()->total_points)->toBe(3)
         ->and($submission->results->first()->result_text)->toBe('Alto');
+});
+
+it('stores the medical access authorization', function () {
+    [$form, $campaign, $q, $high] = openFormWithRadio();
+
+    $this->post("/f/{$form->slug}", validProfile([
+        'authorizes_medical_access' => '0',
+        'answers' => [$q->id => $high->id],
+    ]))->assertRedirect("/f/{$form->slug}/gracias");
+
+    expect(Submission::first()->authorizes_medical_access)->toBeFalse();
+});
+
+it('rejects a submission without the medical access authorization', function () {
+    [$form, $campaign, $q, $high] = openFormWithRadio();
+
+    $profile = validProfile(['answers' => [$q->id => $high->id]]);
+    unset($profile['authorizes_medical_access']);
+
+    $this->from("/f/{$form->slug}")
+        ->post("/f/{$form->slug}", $profile)
+        ->assertSessionHasErrors('authorizes_medical_access');
 });
 
 it('blocks a duplicate email within the same campaign', function () {

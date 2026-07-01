@@ -41,7 +41,8 @@ type ProfileKey =
     | 'children_count'
     | 'cohabitation_group'
     | 'work_email'
-    | 'phone';
+    | 'phone'
+    | 'authorizes_medical_access';
 
 const PROFILE_KEYS: ProfileKey[] = [
     'first_name',
@@ -54,6 +55,7 @@ const PROFILE_KEYS: ProfileKey[] = [
     'cohabitation_group',
     'work_email',
     'phone',
+    'authorizes_medical_access',
 ];
 
 interface FormData {
@@ -67,6 +69,7 @@ interface FormData {
     cohabitation_group: string;
     work_email: string;
     phone: string;
+    authorizes_medical_access: string;
     answers: Record<number, string>;
 }
 
@@ -82,6 +85,7 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
         cohabitation_group: '',
         work_email: '',
         phone: '',
+        authorizes_medical_access: '',
         answers: {},
     });
 
@@ -263,6 +267,39 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
                                     <Input value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
                                 </Field>
                             </div>
+
+                            <div className="mt-5 flex flex-col gap-2">
+                                <Label>
+                                    Autorizo al/los médicos de su empresa a tener acceso a este registro <span className="text-indigo">*</span>
+                                </Label>
+                                <div
+                                    className={cn(
+                                        'flex gap-3 rounded-xl',
+                                        attempted && isBlank(data.authorizes_medical_access) && 'ring-2 ring-danger/40 ring-offset-4 ring-offset-transparent',
+                                    )}
+                                >
+                                    {[
+                                        { value: '1', label: 'Sí' },
+                                        { value: '0', label: 'No' },
+                                    ].map((option) => (
+                                        <label
+                                            key={option.value}
+                                            className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl border border-[rgba(26,24,48,0.1)] bg-white/50 px-3.5 py-2.5 text-sm text-ink transition-colors duration-200 hover:border-[rgba(61,58,138,0.4)] has-[:checked]:border-indigo has-[:checked]:bg-indigo/8"
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="authorizes_medical_access"
+                                                value={option.value}
+                                                checked={data.authorizes_medical_access === option.value}
+                                                onChange={() => setData('authorizes_medical_access', option.value)}
+                                                className="size-4 accent-indigo"
+                                            />
+                                            {option.label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="mt-3 space-y-1">
                                 <FieldError>{errors.work_email}</FieldError>
                                 {attempted && !stepIsComplete(0) && <p className="text-sm text-danger">Completá todos los campos para continuar.</p>}

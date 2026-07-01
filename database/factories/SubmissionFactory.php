@@ -26,6 +26,7 @@ class SubmissionFactory extends Factory
             'cohabitation_group' => fake()->randomElement(CohabitationGroup::cases()),
             'work_email' => fake()->unique()->companyEmail(),
             'phone' => fake()->numerify('+54 9 ## ####-####'),
+            'authorizes_medical_access' => fake()->boolean(),
             'submitted_at' => now(),
         ];
     }

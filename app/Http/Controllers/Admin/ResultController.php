@@ -46,6 +46,7 @@ class ResultController extends Controller
                 'cohabitation_group' => $submission->cohabitation_group->label(),
                 'work_email' => $submission->work_email,
                 'phone' => $submission->phone,
+                'authorizes_medical_access' => $submission->authorizes_medical_access,
                 'answers' => $submission->answers->map(fn ($a) => [
                     'question' => $a->question->label,
                     'value' => $a->option?->label ?? $a->value_text,

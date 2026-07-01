@@ -33,6 +33,7 @@ class StoreSubmissionRequest extends FormRequest
             'cohabitation_group' => ['required', Rule::enum(CohabitationGroup::class)],
             'work_email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
+            'authorizes_medical_access' => ['required', 'boolean'],
             'answers' => ['array'],
         ];
     }

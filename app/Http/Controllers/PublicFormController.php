@@ -70,6 +70,7 @@ class PublicFormController extends Controller
                 'cohabitation_group' => $data['cohabitation_group'],
                 'work_email' => $data['work_email'],
                 'phone' => $data['phone'],
+                'authorizes_medical_access' => $data['authorizes_medical_access'],
                 'submitted_at' => now(),
             ]);
 

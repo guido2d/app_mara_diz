@@ -21,6 +21,7 @@ interface Submission {
     cohabitation_group: string;
     work_email: string;
     phone: string;
+    authorizes_medical_access: boolean;
     answers: Answer[];
     results: Result[];
 }
@@ -78,6 +79,10 @@ export default function ResultShow({ submission }: { submission: Submission }) {
                             value={submission.work_email}
                         />
                         <ProfileItem label="Celular" value={submission.phone} />
+                        <ProfileItem
+                            label="Autoriza acceso médico"
+                            value={submission.authorizes_medical_access ? 'Sí' : 'No'}
+                        />
                     </dl>
                 </GlassCard>
 

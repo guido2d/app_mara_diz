@@ -18,7 +18,8 @@ class Submission extends Model
 
     protected $fillable = [
         'campaign_id', 'first_name', 'last_name', 'role_function', 'age', 'sex',
-        'marital_status', 'children_count', 'cohabitation_group', 'work_email', 'phone', 'submitted_at',
+        'marital_status', 'children_count', 'cohabitation_group', 'work_email', 'phone',
+        'authorizes_medical_access', 'submitted_at',
     ];
 
     /**
@@ -29,6 +30,7 @@ class Submission extends Model
         return [
             'age' => 'integer',
             'children_count' => 'integer',
+            'authorizes_medical_access' => 'boolean',
             'sex' => Sex::class,
             'marital_status' => MaritalStatus::class,
             'cohabitation_group' => CohabitationGroup::class,
