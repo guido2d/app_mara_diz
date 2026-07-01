@@ -1,4 +1,6 @@
 import { Link } from '@inertiajs/react';
+import { DataTable, Td, Th, Tr } from '@/components/ui/table';
+import { AdminShell } from '@/layouts/admin-shell';
 
 interface Result {
     evaluation: string;
@@ -19,41 +21,71 @@ interface Props {
 
 export default function ResultsIndex({ campaign, submissions }: Props) {
     return (
-        <div className="mx-auto max-w-5xl p-6">
-            <h1 className="mb-1 text-2xl font-semibold">Resultados — {campaign.form_name}</h1>
-            <p className="mb-4 text-sm text-gray-500">
-                {campaign.name} · {submissions.length} envíos
-            </p>
-            <table className="w-full text-left text-sm">
-                <thead>
-                    <tr className="border-b">
-                        <th className="py-2">Empleado</th>
-                        <th>Email</th>
-                        <th>Resultados</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {submissions.map((s) => (
-                        <tr key={s.id} className="border-b align-top">
-                            <td className="py-2">{s.name}</td>
-                            <td>{s.work_email}</td>
-                            <td>
-                                {s.results.map((r, i) => (
-                                    <div key={i}>
-                                        {r.evaluation}: <strong>{r.result_text}</strong> ({r.total_points})
-                                    </div>
-                                ))}
-                            </td>
-                            <td>
-                                <Link href={`/admin/submissions/${s.id}`} className="text-blue-600">
-                                    Ver detalle
-                                </Link>
-                            </td>
+        <AdminShell title={`Resultados — ${campaign.form_name}`}>
+            <div className="mb-6">
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
+                    Resultados — {campaign.form_name}
+                </h1>
+                <p className="mt-1 text-sm text-ink-50">
+                    {campaign.name} ·{' '}
+                    <span className="font-medium text-ink">
+                        {submissions.length}
+                    </span>{' '}
+                    envíos
+                </p>
+            </div>
+
+            {submissions.length === 0 ? (
+                <div className="glass rounded-[22px] p-10 text-center">
+                    <p className="text-ink-50">
+                        Esta campaña todavía no tiene respuestas.
+                    </p>
+                </div>
+            ) : (
+                <DataTable>
+                    <thead>
+                        <tr>
+                            <Th>Empleado</Th>
+                            <Th>Email</Th>
+                            <Th>Resultados</Th>
+                            <Th className="text-right">Acciones</Th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        {submissions.map((s) => (
+                            <Tr key={s.id} className="align-top">
+                                <Td className="font-medium">{s.name}</Td>
+                                <Td className="text-ink-50">{s.work_email}</Td>
+                                <Td>
+                                    <div className="flex flex-col gap-1">
+                                        {s.results.map((r, i) => (
+                                            <span key={i} className="text-sm">
+                                                <span className="text-ink-50">
+                                                    {r.evaluation}:
+                                                </span>{' '}
+                                                <strong className="text-ink">
+                                                    {r.result_text}
+                                                </strong>{' '}
+                                                <span className="font-mono text-xs text-ink-50">
+                                                    ({r.total_points})
+                                                </span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </Td>
+                                <Td className="text-right">
+                                    <Link
+                                        href={`/admin/submissions/${s.id}`}
+                                        className="text-sm font-medium text-indigo hover:underline"
+                                    >
+                                        Ver detalle
+                                    </Link>
+                                </Td>
+                            </Tr>
+                        ))}
+                    </tbody>
+                </DataTable>
+            )}
+        </AdminShell>
     );
 }

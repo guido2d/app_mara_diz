@@ -1,21 +1,63 @@
 import { Form } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { GlassCard } from '@/components/ui/card';
+import { FieldError, Input, Label } from '@/components/ui/field';
+import { PublicShell } from '@/layouts/public-shell';
 
 export default function Login() {
     return (
-        <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
-            <h1 className="text-xl font-semibold">Panel de administración</h1>
-            <Form action="/admin/login" method="post" className="flex flex-col gap-3">
-                {({ errors, processing }) => (
-                    <>
-                        <input name="email" type="email" placeholder="Email" required className="rounded border border-gray-300 p-2" />
-                        <input name="password" type="password" placeholder="Contraseña" required className="rounded border border-gray-300 p-2" />
-                        {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
-                        <button type="submit" disabled={processing} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-                            Ingresar
-                        </button>
-                    </>
-                )}
-            </Form>
-        </div>
+        <PublicShell title="Ingresar" className="justify-center">
+            <GlassCard className="w-full max-w-sm p-8">
+                <div className="mb-6 text-center">
+                    <span className="mx-auto mb-4 grid size-10 place-items-center rounded-xl bg-indigo text-sm font-semibold text-indigo-ink">
+                        B
+                    </span>
+                    <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                        Panel de <em className="italic">administración</em>
+                    </h1>
+                    <p className="mt-1 text-sm text-ink-50">
+                        Ingresá con tu cuenta para continuar.
+                    </p>
+                </div>
+                <Form
+                    action="/admin/login"
+                    method="post"
+                    className="flex flex-col gap-4"
+                >
+                    {({ errors, processing }) => (
+                        <>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    autoComplete="email"
+                                    required
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="password">Contraseña</Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </div>
+                            <FieldError>{errors.email}</FieldError>
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="mt-1 w-full"
+                            >
+                                {processing ? 'Ingresando…' : 'Ingresar'}
+                            </Button>
+                        </>
+                    )}
+                </Form>
+            </GlassCard>
+        </PublicShell>
     );
 }
