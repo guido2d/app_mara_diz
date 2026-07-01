@@ -51,8 +51,16 @@ export default function FormEdit({ form, evaluations }: Props) {
                                         id="description"
                                         name="description"
                                         defaultValue={form.description ?? ''}
-                                        rows={3}
+                                        rows={6}
                                     />
+                                    <p className="text-xs text-ink-50">
+                                        Usá{' '}
+                                        <code className="rounded bg-ink/6 px-1 font-mono">
+                                            **texto**
+                                        </code>{' '}
+                                        para resaltar en negrita. Los saltos de
+                                        línea se respetan.
+                                    </p>
                                 </div>
                                 <fieldset className="flex flex-col gap-2">
                                     <legend className="mb-1 text-sm font-medium text-ink">

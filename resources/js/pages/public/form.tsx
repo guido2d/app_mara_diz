@@ -4,6 +4,7 @@ import type {ReactNode} from 'react';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { FieldError, Input, Label, Select } from '@/components/ui/field';
+import { RichText } from '@/components/ui/rich-text';
 import { PublicShell } from '@/layouts/public-shell';
 import { cn } from '@/lib/utils';
 
@@ -85,6 +86,7 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
     });
 
     const totalSteps = 1 + evaluations.length;
+    const [started, setStarted] = useState(false);
     const [step, setStep] = useState(0);
     const [attempted, setAttempted] = useState(false);
 
@@ -154,13 +156,31 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
 
     const stepTitle = step === 0 ? 'Tus datos' : evaluations[step - 1].name;
 
+    if (!started) {
+        return (
+            <PublicShell title={form.name} className="justify-center">
+                <GlassCard className="w-full max-w-xl p-8 sm:p-10">
+                    <p className="font-mono text-[11px] font-medium tracking-[0.08em] text-ink-50 uppercase">{campaign.name}</p>
+                    <h1 className="mt-3 font-display text-4xl font-medium tracking-tight text-ink sm:text-5xl">{form.name}</h1>
+                    {form.description && (
+                        <p className="mt-4 text-[1.0625rem] leading-relaxed whitespace-pre-line text-ink-50">
+                            <RichText text={form.description} />
+                        </p>
+                    )}
+                    <Button type="button" onClick={() => setStarted(true)} className="mt-8">
+                        Comenzar →
+                    </Button>
+                </GlassCard>
+            </PublicShell>
+        );
+    }
+
     return (
         <PublicShell title={form.name}>
             <div className="w-full max-w-2xl">
                 <header className="mb-6 px-1">
                     <p className="font-mono text-[11px] font-medium tracking-[0.08em] text-ink-50 uppercase">{campaign.name}</p>
                     <h1 className="mt-2 font-display text-4xl font-medium tracking-tight text-ink sm:text-5xl">{form.name}</h1>
-                    {form.description && <p className="mt-3 max-w-xl text-[1.0625rem] leading-relaxed text-ink-50">{form.description}</p>}
                 </header>
 
                 <div className="mb-6 px-1">
