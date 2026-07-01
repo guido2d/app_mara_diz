@@ -21,7 +21,7 @@ class Form extends Model
         return $this->belongsToMany(Evaluation::class)
             ->withPivot('position')
             ->withTimestamps()
-            ->orderBy('position');
+            ->orderByPivot('position');
     }
 
     /** @return HasMany<Campaign, $this> */
