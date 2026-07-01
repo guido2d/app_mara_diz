@@ -10,7 +10,7 @@ export default function Login() {
             <GlassCard className="w-full max-w-sm p-8">
                 <div className="mb-6 text-center">
                     <span className="mx-auto mb-4 grid size-10 place-items-center rounded-xl bg-indigo text-sm font-semibold text-indigo-ink">
-                        B
+                        M
                     </span>
                     <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
                         Panel de <em className="italic">administración</em>

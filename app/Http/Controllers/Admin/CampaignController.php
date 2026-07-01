@@ -44,4 +44,21 @@ class CampaignController extends Controller
 
         return redirect()->route('admin.forms.campaigns.index', $campaign->form_id);
     }
+
+    public function reopen(Campaign $campaign): RedirectResponse
+    {
+        if ($campaign->form->openCampaign() !== null) {
+            return back()->withErrors(['name' => 'Este formulario ya tiene una campaña abierta. Cerrala antes de reabrir otra.']);
+        }
+
+        $attributes = ['closed_at' => null];
+
+        if ($campaign->ends_at->endOfDay()->isPast()) {
+            $attributes['ends_at'] = now()->addDays(7)->startOfDay();
+        }
+
+        $campaign->update($attributes);
+
+        return redirect()->route('admin.forms.campaigns.index', $campaign->form_id);
+    }
 }

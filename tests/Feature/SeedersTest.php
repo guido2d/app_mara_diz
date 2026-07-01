@@ -4,10 +4,10 @@ use App\Models\Evaluation;
 use App\Models\User;
 use App\Services\RangeCoverageValidator;
 use Database\Seeders\AdminUserSeeder;
-use Database\Seeders\WellbeingSeeder;
+use Database\Seeders\StressSignalsSeeder;
 
 it('seeds at least one evaluation with valid range coverage', function () {
-    $this->seed(WellbeingSeeder::class);
+    $this->seed(StressSignalsSeeder::class);
 
     $evaluation = Evaluation::with(['questions.options', 'scoreRanges'])->first();
     expect($evaluation)->not->toBeNull()

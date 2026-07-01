@@ -16,8 +16,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminUserSeeder::class,
-            WellbeingSeeder::class,
             StressSignalsSeeder::class,
+            PhysicalSymptomsSeeder::class,
+            HealthyHabitsSeeder::class,
+            WorkSelfPerceptionSeeder::class,
         ]);
     }
 }

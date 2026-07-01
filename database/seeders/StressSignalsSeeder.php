@@ -11,7 +11,7 @@ class StressSignalsSeeder extends Seeder
     public function run(): void
     {
         $evaluation = Evaluation::create([
-            'name' => 'Señales de estrés',
+            'name' => 'Síntomas psíquicos',
             'slug' => 'senales-de-estres',
             'description' => 'Indicá con qué frecuencia experimentás cada una de estas situaciones en el último tiempo.',
             'position' => 2,

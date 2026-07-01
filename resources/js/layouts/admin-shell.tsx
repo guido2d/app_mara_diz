@@ -39,10 +39,10 @@ export function AdminShell({ title, children }: AdminShellProps) {
                                 className="mr-2 flex items-center gap-2 px-2"
                             >
                                 <span className="grid size-7 place-items-center rounded-lg bg-indigo text-[13px] font-semibold text-indigo-ink">
-                                    B
+                                    M
                                 </span>
                                 <span className="font-display text-lg leading-none font-semibold text-ink">
-                                    Bienestar
+                                    Mara Diz
                                 </span>
                             </Link>
                             <NavLink href="/admin/forms" label="Formularios" />

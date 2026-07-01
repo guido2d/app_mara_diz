@@ -21,6 +21,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('forms/{form}/campaigns', [CampaignController::class, 'index'])->name('forms.campaigns.index');
     Route::post('forms/{form}/campaigns', [CampaignController::class, 'store'])->name('forms.campaigns.store');
     Route::post('campaigns/{campaign}/close', [CampaignController::class, 'close'])->name('campaigns.close');
+    Route::post('campaigns/{campaign}/reopen', [CampaignController::class, 'reopen'])->name('campaigns.reopen');
 
     Route::get('evaluations/{evaluation}/ranges', [ScoreRangeController::class, 'edit'])->name('evaluations.ranges.edit');
     Route::put('evaluations/{evaluation}/ranges', [ScoreRangeController::class, 'update'])->name('evaluations.ranges.update');

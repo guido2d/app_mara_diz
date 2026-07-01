@@ -163,6 +163,24 @@ export default function CampaignsIndex({ form, campaigns }: Props) {
                                                 Cerrar
                                             </button>
                                         )}
+                                        {!c.is_open && !hasOpen && (
+                                            <button
+                                                onClick={() => {
+                                                    if (
+                                                        confirm(
+                                                            `¿Reabrir la campaña “${c.name}”?`,
+                                                        )
+                                                    ) {
+                                                        router.post(
+                                                            `/admin/campaigns/${c.id}/reopen`,
+                                                        );
+                                                    }
+                                                }}
+                                                className="cursor-pointer text-indigo hover:underline"
+                                            >
+                                                Reabrir
+                                            </button>
+                                        )}
                                     </div>
                                 </Td>
                             </Tr>
