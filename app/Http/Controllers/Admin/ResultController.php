@@ -15,7 +15,7 @@ class ResultController extends Controller
         $campaign->load('form', 'submissions.results.evaluation');
 
         return Inertia::render('admin/results/index', [
-            'campaign' => ['id' => $campaign->id, 'name' => $campaign->name, 'form_name' => $campaign->form->name],
+            'campaign' => ['id' => $campaign->id, 'name' => $campaign->name, 'form_id' => $campaign->form->id, 'form_name' => $campaign->form->name],
             'submissions' => $campaign->submissions->map(fn (Submission $s) => [
                 'id' => $s->id,
                 'name' => "{$s->first_name} {$s->last_name}",

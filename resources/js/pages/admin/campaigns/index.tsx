@@ -18,6 +18,13 @@ interface Props {
     campaigns: CampaignRow[];
 }
 
+/** Convierte una fecha `YYYY-MM-DD` a `DD-MM-YYYY` sin tocar zona horaria. */
+function formatDate(iso: string): string {
+    const [year, month, day] = iso.split('-');
+
+    return `${day}-${month}-${year}`;
+}
+
 export default function CampaignsIndex({ form, campaigns }: Props) {
     const hasOpen = campaigns.some((c) => c.is_open);
 
@@ -103,7 +110,7 @@ export default function CampaignsIndex({ form, campaigns }: Props) {
                             <Th>Nombre</Th>
                             <Th>Desde</Th>
                             <Th>Hasta</Th>
-                            <Th>Envíos</Th>
+                            <Th>Respuestas</Th>
                             <Th>Estado</Th>
                             <Th className="text-right">Acciones</Th>
                         </tr>
@@ -113,10 +120,10 @@ export default function CampaignsIndex({ form, campaigns }: Props) {
                             <Tr key={c.id}>
                                 <Td className="font-medium">{c.name}</Td>
                                 <Td className="font-mono text-xs text-ink-50">
-                                    {c.starts_at}
+                                    {formatDate(c.starts_at)}
                                 </Td>
                                 <Td className="font-mono text-xs text-ink-50">
-                                    {c.ends_at}
+                                    {formatDate(c.ends_at)}
                                 </Td>
                                 <Td>{c.submissions_count}</Td>
                                 <Td>

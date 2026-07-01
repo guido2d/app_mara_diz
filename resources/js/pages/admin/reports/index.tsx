@@ -1,3 +1,4 @@
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
@@ -7,7 +8,7 @@ interface Report {
     by_sex: Record<string, number>;
 }
 interface Props {
-    campaign: { id: number; name: string };
+    campaign: { id: number; name: string; form_id: number; form_name: string };
     report: Report;
 }
 
@@ -46,6 +47,13 @@ export default function ReportsIndex({ campaign, report }: Props) {
     return (
         <AdminShell title={`Reporte — ${campaign.name}`}>
             <div className="mx-auto max-w-3xl">
+                <Breadcrumbs
+                    items={[
+                        { label: 'Formularios', href: '/admin/forms' },
+                        { label: campaign.form_name, href: `/admin/forms/${campaign.form_id}/campaigns` },
+                        { label: `Reporte · ${campaign.name}` },
+                    ]}
+                />
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
                     Reporte de uso
                 </h1>
@@ -54,7 +62,7 @@ export default function ReportsIndex({ campaign, report }: Props) {
                 <GlassCard className="mb-5 flex items-center justify-between">
                     <div>
                         <p className="font-mono text-[11px] tracking-[0.08em] text-ink-50 uppercase">
-                            Envíos completados
+                            Respuestas completadas
                         </p>
                         <p className="mt-1 font-display text-5xl font-medium tracking-tight text-ink">
                             {report.submissions_total}

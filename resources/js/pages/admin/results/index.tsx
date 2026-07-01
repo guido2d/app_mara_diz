@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { DataTable, Td, Th, Tr } from '@/components/ui/table';
 import { AdminShell } from '@/layouts/admin-shell';
 
@@ -15,13 +16,20 @@ interface Row {
     results: Result[];
 }
 interface Props {
-    campaign: { id: number; name: string; form_name: string };
+    campaign: { id: number; name: string; form_id: number; form_name: string };
     submissions: Row[];
 }
 
 export default function ResultsIndex({ campaign, submissions }: Props) {
     return (
         <AdminShell title={`Resultados — ${campaign.form_name}`}>
+            <Breadcrumbs
+                items={[
+                    { label: 'Formularios', href: '/admin/forms' },
+                    { label: campaign.form_name, href: `/admin/forms/${campaign.form_id}/campaigns` },
+                    { label: `Resultados · ${campaign.name}` },
+                ]}
+            />
             <div className="mb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
                     Resultados — {campaign.form_name}
@@ -31,7 +39,7 @@ export default function ResultsIndex({ campaign, submissions }: Props) {
                     <span className="font-medium text-ink">
                         {submissions.length}
                     </span>{' '}
-                    envíos
+                    respuestas
                 </p>
             </div>
 
