@@ -1,7 +1,7 @@
 <?php
 
-test('returns a successful response', function () {
+test('root redirects to admin forms', function () {
     $response = $this->get(route('home'));
 
-    $response->assertOk();
+    $response->assertRedirect('/admin/forms');
 });
