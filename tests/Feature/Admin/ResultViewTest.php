@@ -11,7 +11,7 @@ it('lists submissions with their results for a campaign', function () {
     $campaign = Campaign::factory()->open()->create();
     $evaluation = Evaluation::factory()->create();
     $submission = Submission::factory()->for($campaign)->create(['first_name' => 'Ana', 'last_name' => 'García']);
-    $submission->results()->create(['evaluation_id' => $evaluation->id, 'total_points' => 5, 'score_range_id' => null, 'result_text' => 'Alto']);
+    $submission->results()->create(['evaluation_id' => $evaluation->id, 'total_points' => 5]);
 
     $this->get("/admin/campaigns/{$campaign->id}/results")
         ->assertOk()

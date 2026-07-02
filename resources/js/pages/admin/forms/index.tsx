@@ -1,7 +1,16 @@
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { buttonClass } from '@/components/ui/button';
-import { DataTable, StatusPill, Td, Th, Tr } from '@/components/ui/table';
+import {
+    CardActions,
+    CardList,
+    DataTable,
+    RecordCard,
+    StatusPill,
+    Td,
+    Th,
+    Tr,
+} from '@/components/ui/table';
 import { AdminShell } from '@/layouts/admin-shell';
 
 interface FormRow {
@@ -101,10 +110,46 @@ function PublicLinkActions({ slug }: { slug: string }) {
     );
 }
 
+/** Acciones por fila reutilizadas en la tabla (desktop) y en la tarjeta (mobile). */
+function FormActions({ form }: { form: FormRow }) {
+    return (
+        <>
+            <Link
+                href={`/admin/forms/${form.id}/edit`}
+                className="text-indigo hover:underline"
+            >
+                Editar
+            </Link>
+            <Link
+                href={`/admin/forms/${form.id}/campaigns`}
+                className="text-indigo hover:underline"
+            >
+                Campañas
+            </Link>
+            <Link
+                href={`/admin/forms/${form.id}/employees`}
+                className="text-indigo hover:underline"
+            >
+                Comparativo
+            </Link>
+            <button
+                onClick={() => {
+                    if (confirm(`¿Borrar el formulario “${form.name}”?`)) {
+                        router.delete(`/admin/forms/${form.id}`);
+                    }
+                }}
+                className="cursor-pointer text-danger hover:underline"
+            >
+                Borrar
+            </button>
+        </>
+    );
+}
+
 export default function FormsIndex({ forms }: { forms: FormRow[] }) {
     return (
         <AdminShell title="Formularios">
-            <div className="mb-6 flex items-end justify-between gap-4">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
                         Formularios
@@ -116,7 +161,7 @@ export default function FormsIndex({ forms }: { forms: FormRow[] }) {
                 </div>
                 <Link
                     href="/admin/forms/create"
-                    className={buttonClass('primary')}
+                    className={buttonClass('primary', 'w-full sm:w-auto')}
                 >
                     Nuevo formulario
                 </Link>
@@ -130,65 +175,71 @@ export default function FormsIndex({ forms }: { forms: FormRow[] }) {
                     </p>
                 </div>
             ) : (
-                <DataTable>
-                    <thead>
-                        <tr>
-                            <Th>Nombre</Th>
-                            <Th>Evaluaciones</Th>
-                            <Th>Estado</Th>
-                            <Th>Link público</Th>
-                            <Th className="text-right">Acciones</Th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <>
+                    <DataTable>
+                        <thead>
+                            <tr>
+                                <Th>Nombre</Th>
+                                <Th>Evaluaciones</Th>
+                                <Th>Estado</Th>
+                                <Th>Link público</Th>
+                                <Th className="text-right">Acciones</Th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {forms.map((form) => (
+                                <Tr key={form.id}>
+                                    <Td className="font-medium">{form.name}</Td>
+                                    <Td>{form.evaluations_count}</Td>
+                                    <Td>
+                                        <StatusPill active={form.is_active}>
+                                            {form.is_active
+                                                ? 'Activo'
+                                                : 'Inactivo'}
+                                        </StatusPill>
+                                    </Td>
+                                    <Td>
+                                        <PublicLinkActions slug={form.slug} />
+                                    </Td>
+                                    <Td>
+                                        <div className="flex items-center justify-end gap-3 text-sm font-medium">
+                                            <FormActions form={form} />
+                                        </div>
+                                    </Td>
+                                </Tr>
+                            ))}
+                        </tbody>
+                    </DataTable>
+
+                    <CardList>
                         {forms.map((form) => (
-                            <Tr key={form.id}>
-                                <Td className="font-medium">{form.name}</Td>
-                                <Td>{form.evaluations_count}</Td>
-                                <Td>
+                            <RecordCard key={form.id}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="font-medium [overflow-wrap:anywhere] text-ink">
+                                            {form.name}
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-ink-50">
+                                            {form.evaluations_count}{' '}
+                                            {form.evaluations_count === 1
+                                                ? 'evaluación'
+                                                : 'evaluaciones'}
+                                        </p>
+                                    </div>
                                     <StatusPill active={form.is_active}>
                                         {form.is_active ? 'Activo' : 'Inactivo'}
                                     </StatusPill>
-                                </Td>
-                                <Td>
+                                </div>
+                                <div className="mt-3 border-t border-[rgba(26,24,48,0.08)] pt-3">
                                     <PublicLinkActions slug={form.slug} />
-                                </Td>
-                                <Td>
-                                    <div className="flex items-center justify-end gap-3 text-sm font-medium">
-                                        <Link
-                                            href={`/admin/forms/${form.id}/edit`}
-                                            className="text-indigo hover:underline"
-                                        >
-                                            Editar
-                                        </Link>
-                                        <Link
-                                            href={`/admin/forms/${form.id}/campaigns`}
-                                            className="text-indigo hover:underline"
-                                        >
-                                            Campañas
-                                        </Link>
-                                        <button
-                                            onClick={() => {
-                                                if (
-                                                    confirm(
-                                                        `¿Borrar el formulario “${form.name}”?`,
-                                                    )
-                                                ) {
-                                                    router.delete(
-                                                        `/admin/forms/${form.id}`,
-                                                    );
-                                                }
-                                            }}
-                                            className="cursor-pointer text-danger hover:underline"
-                                        >
-                                            Borrar
-                                        </button>
-                                    </div>
-                                </Td>
-                            </Tr>
+                                </div>
+                                <CardActions>
+                                    <FormActions form={form} />
+                                </CardActions>
+                            </RecordCard>
                         ))}
-                    </tbody>
-                </DataTable>
+                    </CardList>
+                </>
             )}
         </AdminShell>
     );

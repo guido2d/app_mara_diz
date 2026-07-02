@@ -17,6 +17,13 @@ class StoreSubmissionRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('work_email'))) {
+            $this->merge(['work_email' => mb_strtolower(trim($this->input('work_email')))]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -21,16 +21,20 @@ class Evaluation extends Model
         return $this->hasMany(Question::class)->orderBy('position');
     }
 
-    /** @return HasMany<ScoreRange, $this> */
-    public function scoreRanges(): HasMany
-    {
-        return $this->hasMany(ScoreRange::class)->orderBy('position');
-    }
-
     /** @return BelongsToMany<Form, $this> */
     public function forms(): BelongsToMany
     {
         return $this->belongsToMany(Form::class)->withPivot('position')->withTimestamps();
+    }
+
+    /**
+     * Whether this evaluation has at least one scored question (radio/select).
+     */
+    public function isScored(): bool
+    {
+        return $this->questions()
+            ->get()
+            ->contains(fn (Question $q) => $q->type->isScored());
     }
 
     public function maxPossiblePoints(): int

@@ -81,9 +81,17 @@ class PublicFormController extends Controller
                     continue;
                 }
 
+                $option = $question->type->isScored()
+                    ? $question->options->firstWhere('id', (int) $value)
+                    : null;
+
                 $submission->answers()->create([
                     'question_id' => $question->id,
-                    'question_option_id' => $question->type->isScored() ? (int) $value : null,
+                    'question_label' => $question->label,
+                    'question_type' => $question->type,
+                    'question_option_id' => $option?->id,
+                    'option_label' => $option?->label,
+                    'option_points' => $option?->points,
                     'value_text' => $question->type->isScored() ? null : (string) $value,
                 ]);
             }

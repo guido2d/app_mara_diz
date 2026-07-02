@@ -6,6 +6,7 @@ use App\Enums\CohabitationGroup;
 use App\Enums\MaritalStatus;
 use App\Enums\Sex;
 use Database\Factories\SubmissionFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,18 @@ class Submission extends Model
             'cohabitation_group' => CohabitationGroup::class,
             'submitted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Normalize the work email (trim + lowercase) so it can identify a person across campaigns.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function workEmail(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $value): string => mb_strtolower(trim($value)),
+        );
     }
 
     /** @return BelongsTo<Campaign, $this> */

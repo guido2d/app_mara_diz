@@ -65,14 +65,5 @@ class StressSignalsSeeder extends Seeder
                 $question->options()->create([...$option, 'position' => $p + 1]);
             }
         }
-
-        // Máximo posible = 26 preguntas * 3 puntos = 78.
-        // Rangos de referencia (editables desde el panel de administración).
-        $evaluation->scoreRanges()->createMany([
-            ['min_points' => 0, 'max_points' => 13, 'result_text' => 'Señales de estrés bajas. Buen manejo general.', 'position' => 1],
-            ['min_points' => 14, 'max_points' => 33, 'result_text' => 'Señales de estrés moderadas. Conviene prestar atención.', 'position' => 2],
-            ['min_points' => 34, 'max_points' => 53, 'result_text' => 'Señales de estrés altas. Es recomendable tomar medidas.', 'position' => 3],
-            ['min_points' => 54, 'max_points' => 78, 'result_text' => 'Señales de estrés muy altas. Se sugiere consultar con un/a profesional.', 'position' => 4],
-        ]);
     }
 }

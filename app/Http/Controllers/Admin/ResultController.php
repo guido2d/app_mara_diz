@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Submission;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +25,6 @@ class ResultController extends Controller
                 'results' => $s->results->map(fn ($r) => [
                     'evaluation' => $r->evaluation->name,
                     'total_points' => $r->total_points,
-                    'result_text' => $r->result_text,
                 ]),
             ]),
         ]);
@@ -32,7 +32,28 @@ class ResultController extends Controller
 
     public function show(Submission $submission): Response
     {
-        $submission->load('answers.question', 'answers.option', 'results.evaluation');
+        $submission->load('answers.question.evaluation', 'answers.option', 'results.evaluation');
+
+        $totalsByEvaluation = $submission->results->keyBy('evaluation_id');
+
+        $evaluations = $submission->answers
+            ->groupBy(fn ($a) => $a->question->evaluation_id)
+            ->map(function ($answers, $evaluationId) use ($totalsByEvaluation) {
+                $evaluation = $answers->first()->question->evaluation;
+
+                return [
+                    'evaluation' => $evaluation->name,
+                    'position' => $evaluation->position,
+                    'total_points' => $totalsByEvaluation->get($evaluationId)?->total_points,
+                    'answers' => $answers->map(fn ($a) => [
+                        'question' => $a->question->label,
+                        'value' => $a->option?->label ?? $a->value_text,
+                        'points' => $a->option?->points,
+                    ])->values(),
+                ];
+            })
+            ->sortBy('position')
+            ->values();
 
         return Inertia::render('admin/results/show', [
             'submission' => [
@@ -47,16 +68,17 @@ class ResultController extends Controller
                 'work_email' => $submission->work_email,
                 'phone' => $submission->phone,
                 'authorizes_medical_access' => $submission->authorizes_medical_access,
-                'answers' => $submission->answers->map(fn ($a) => [
-                    'question' => $a->question->label,
-                    'value' => $a->option?->label ?? $a->value_text,
-                ]),
-                'results' => $submission->results->map(fn ($r) => [
-                    'evaluation' => $r->evaluation->name,
-                    'total_points' => $r->total_points,
-                    'result_text' => $r->result_text,
-                ]),
+                'evaluations' => $evaluations,
             ],
         ]);
+    }
+
+    public function destroy(Submission $submission): RedirectResponse
+    {
+        $campaignId = $submission->campaign_id;
+
+        $submission->delete();
+
+        return redirect()->route('admin.campaigns.results', $campaignId);
     }
 }

@@ -1,7 +1,12 @@
 # 2. Snapshot de resultados por Envío
 
 Fecha: 2026-06-30
-Estado: Aceptado
+Estado: Reemplazado por [0003](0003-respuestas-individuales-sin-rangos.md) (2026-07-01)
+
+> **Nota:** Este ADR congelaba el resultado por Evaluación como total + rango + texto.
+> El [ADR 0003](0003-respuestas-individuales-sin-rangos.md) elimina los Rangos y baja el
+> snapshot al nivel de Respuesta. La idea de inmutabilidad histórica se mantiene; cambia
+> **qué** se congela (respuestas individuales y total, no rango ni texto).
 
 ## Contexto
 

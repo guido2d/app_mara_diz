@@ -7,34 +7,36 @@ use App\Models\Submission;
 
 class ScoringService
 {
+    /**
+     * Store one total-points snapshot per scored evaluation of the submission's form.
+     * Totals come from the option points frozen on each answer.
+     */
     public function computeAndStore(Submission $submission): void
     {
-        $submission->loadMissing('answers.option', 'campaign.form.evaluations.questions', 'campaign.form.evaluations.scoreRanges');
+        $submission->loadMissing('answers', 'campaign.form.evaluations.questions');
 
-        $optionPointsByQuestion = $submission->answers
-            ->filter(fn ($answer) => $answer->option !== null)
-            ->mapWithKeys(fn ($answer) => [$answer->question_id => (int) $answer->option->points]);
+        $pointsByQuestion = $submission->answers
+            ->mapWithKeys(fn ($answer) => [$answer->question_id => (int) ($answer->option_points ?? 0)]);
 
         foreach ($submission->campaign->form->evaluations as $evaluation) {
-            $total = $this->totalForEvaluation($evaluation, $optionPointsByQuestion->toArray());
-            $range = $evaluation->scoreRanges->first(fn ($r) => $r->contains($total));
+            if (! $evaluation->isScored()) {
+                continue;
+            }
 
             $submission->results()->create([
                 'evaluation_id' => $evaluation->id,
-                'total_points' => $total,
-                'score_range_id' => $range?->id,
-                'result_text' => $range?->result_text ?? '',
+                'total_points' => $this->totalForEvaluation($evaluation, $pointsByQuestion->toArray()),
             ]);
         }
     }
 
     /**
-     * @param  array<int, int>  $optionPointsByQuestion
+     * @param  array<int, int>  $pointsByQuestion
      */
-    private function totalForEvaluation(Evaluation $evaluation, array $optionPointsByQuestion): int
+    private function totalForEvaluation(Evaluation $evaluation, array $pointsByQuestion): int
     {
         return (int) $evaluation->questions
             ->filter(fn ($q) => $q->type->isScored())
-            ->sum(fn ($q) => $optionPointsByQuestion[$q->id] ?? 0);
+            ->sum(fn ($q) => $pointsByQuestion[$q->id] ?? 0);
     }
 }

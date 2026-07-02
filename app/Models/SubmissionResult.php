@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubmissionResult extends Model
 {
-    protected $fillable = ['submission_id', 'evaluation_id', 'total_points', 'score_range_id', 'result_text'];
+    protected $fillable = ['submission_id', 'evaluation_id', 'total_points'];
 
     /**
      * @return array<string, string>
@@ -27,11 +27,5 @@ class SubmissionResult extends Model
     public function evaluation(): BelongsTo
     {
         return $this->belongsTo(Evaluation::class);
-    }
-
-    /** @return BelongsTo<ScoreRange, $this> */
-    public function scoreRange(): BelongsTo
-    {
-        return $this->belongsTo(ScoreRange::class);
     }
 }

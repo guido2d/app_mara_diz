@@ -2,7 +2,17 @@ import { Form, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { FieldError, Input, Label } from '@/components/ui/field';
-import { DataTable, StatusPill, Td, Th, Tr } from '@/components/ui/table';
+import {
+    CardActions,
+    CardField,
+    CardList,
+    DataTable,
+    RecordCard,
+    StatusPill,
+    Td,
+    Th,
+    Tr,
+} from '@/components/ui/table';
 import { AdminShell } from '@/layouts/admin-shell';
 
 interface CampaignRow {
@@ -23,6 +33,56 @@ function formatDate(iso: string): string {
     const [year, month, day] = iso.split('-');
 
     return `${day}-${month}-${year}`;
+}
+
+/** Acciones por campaña reutilizadas en la tabla (desktop) y la tarjeta (mobile). */
+function CampaignActions({
+    campaign,
+    hasOpen,
+}: {
+    campaign: CampaignRow;
+    hasOpen: boolean;
+}) {
+    return (
+        <>
+            <Link
+                href={`/admin/campaigns/${campaign.id}/results`}
+                className="text-indigo hover:underline"
+            >
+                Resultados
+            </Link>
+            {campaign.is_open && (
+                <button
+                    onClick={() => {
+                        if (confirm(`¿Cerrar la campaña “${campaign.name}”?`)) {
+                            router.post(
+                                `/admin/campaigns/${campaign.id}/close`,
+                            );
+                        }
+                    }}
+                    className="cursor-pointer text-danger hover:underline"
+                >
+                    Cerrar
+                </button>
+            )}
+            {!campaign.is_open && !hasOpen && (
+                <button
+                    onClick={() => {
+                        if (
+                            confirm(`¿Reabrir la campaña “${campaign.name}”?`)
+                        ) {
+                            router.post(
+                                `/admin/campaigns/${campaign.id}/reopen`,
+                            );
+                        }
+                    }}
+                    className="cursor-pointer text-indigo hover:underline"
+                >
+                    Reabrir
+                </button>
+            )}
+        </>
+    );
 }
 
 export default function CampaignsIndex({ form, campaigns }: Props) {
@@ -104,89 +164,83 @@ export default function CampaignsIndex({ form, campaigns }: Props) {
                     </p>
                 </div>
             ) : (
-                <DataTable>
-                    <thead>
-                        <tr>
-                            <Th>Nombre</Th>
-                            <Th>Desde</Th>
-                            <Th>Hasta</Th>
-                            <Th>Respuestas</Th>
-                            <Th>Estado</Th>
-                            <Th className="text-right">Acciones</Th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <>
+                    <DataTable>
+                        <thead>
+                            <tr>
+                                <Th>Nombre</Th>
+                                <Th>Desde</Th>
+                                <Th>Hasta</Th>
+                                <Th>Respuestas</Th>
+                                <Th>Estado</Th>
+                                <Th className="text-right">Acciones</Th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {campaigns.map((c) => (
+                                <Tr key={c.id}>
+                                    <Td className="font-medium">{c.name}</Td>
+                                    <Td className="font-mono text-xs text-ink-50">
+                                        {formatDate(c.starts_at)}
+                                    </Td>
+                                    <Td className="font-mono text-xs text-ink-50">
+                                        {formatDate(c.ends_at)}
+                                    </Td>
+                                    <Td>{c.submissions_count}</Td>
+                                    <Td>
+                                        <StatusPill active={c.is_open}>
+                                            {c.is_open ? 'Abierta' : 'Cerrada'}
+                                        </StatusPill>
+                                    </Td>
+                                    <Td>
+                                        <div className="flex items-center justify-end gap-3 text-sm font-medium">
+                                            <CampaignActions
+                                                campaign={c}
+                                                hasOpen={hasOpen}
+                                            />
+                                        </div>
+                                    </Td>
+                                </Tr>
+                            ))}
+                        </tbody>
+                    </DataTable>
+
+                    <CardList>
                         {campaigns.map((c) => (
-                            <Tr key={c.id}>
-                                <Td className="font-medium">{c.name}</Td>
-                                <Td className="font-mono text-xs text-ink-50">
-                                    {formatDate(c.starts_at)}
-                                </Td>
-                                <Td className="font-mono text-xs text-ink-50">
-                                    {formatDate(c.ends_at)}
-                                </Td>
-                                <Td>{c.submissions_count}</Td>
-                                <Td>
+                            <RecordCard key={c.id}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="min-w-0 font-medium [overflow-wrap:anywhere] text-ink">
+                                        {c.name}
+                                    </p>
                                     <StatusPill active={c.is_open}>
                                         {c.is_open ? 'Abierta' : 'Cerrada'}
                                     </StatusPill>
-                                </Td>
-                                <Td>
-                                    <div className="flex items-center justify-end gap-3 text-sm font-medium">
-                                        <Link
-                                            href={`/admin/campaigns/${c.id}/results`}
-                                            className="text-indigo hover:underline"
-                                        >
-                                            Resultados
-                                        </Link>
-                                        <Link
-                                            href={`/admin/campaigns/${c.id}/report`}
-                                            className="text-indigo hover:underline"
-                                        >
-                                            Reporte
-                                        </Link>
-                                        {c.is_open && (
-                                            <button
-                                                onClick={() => {
-                                                    if (
-                                                        confirm(
-                                                            `¿Cerrar la campaña “${c.name}”?`,
-                                                        )
-                                                    ) {
-                                                        router.post(
-                                                            `/admin/campaigns/${c.id}/close`,
-                                                        );
-                                                    }
-                                                }}
-                                                className="cursor-pointer text-danger hover:underline"
-                                            >
-                                                Cerrar
-                                            </button>
-                                        )}
-                                        {!c.is_open && !hasOpen && (
-                                            <button
-                                                onClick={() => {
-                                                    if (
-                                                        confirm(
-                                                            `¿Reabrir la campaña “${c.name}”?`,
-                                                        )
-                                                    ) {
-                                                        router.post(
-                                                            `/admin/campaigns/${c.id}/reopen`,
-                                                        );
-                                                    }
-                                                }}
-                                                className="cursor-pointer text-indigo hover:underline"
-                                            >
-                                                Reabrir
-                                            </button>
-                                        )}
-                                    </div>
-                                </Td>
-                            </Tr>
+                                </div>
+                                <div className="mt-3 border-t border-[rgba(26,24,48,0.08)] pt-2">
+                                    <CardField label="Desde">
+                                        <span className="font-mono text-xs text-ink-50">
+                                            {formatDate(c.starts_at)}
+                                        </span>
+                                    </CardField>
+                                    <CardField label="Hasta">
+                                        <span className="font-mono text-xs text-ink-50">
+                                            {formatDate(c.ends_at)}
+                                        </span>
+                                    </CardField>
+                                    <CardField label="Respuestas">
+                                        {c.submissions_count}
+                                    </CardField>
+                                </div>
+                                <CardActions>
+                                    <CampaignActions
+                                        campaign={c}
+                                        hasOpen={hasOpen}
+                                    />
+                                </CardActions>
+                            </RecordCard>
                         ))}
-                    </tbody>
-                </DataTable>
+                    </CardList>
+                </>
             )}
         </AdminShell>
     );

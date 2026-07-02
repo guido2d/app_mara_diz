@@ -1,6 +1,8 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import type { ReactNode } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState, type ReactNode } from 'react';
 import { buttonClass } from '@/components/ui/button';
+import { NavLink } from '@/components/ui/nav-link';
+import { adminNavItems } from '@/config/nav';
 import { cn } from '@/lib/utils';
 
 interface AdminShellProps {
@@ -8,25 +10,11 @@ interface AdminShellProps {
     children: ReactNode;
 }
 
-function NavLink({ href, label }: { href: string; label: string }) {
-    const { url } = usePage();
-    const active = url.startsWith(href);
-
-    return (
-        <Link
-            href={href}
-            className={cn(
-                'rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200',
-                active ? 'bg-indigo/12 text-ink' : 'text-ink-50 hover:text-ink',
-            )}
-        >
-            {label}
-        </Link>
-    );
-}
-
 /** Chrome for the authenticated admin panel: glass top bar + centred content. */
 export function AdminShell({ title, children }: AdminShellProps) {
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const logout = () => router.post('/admin/logout');
+
     return (
         <>
             {title && <Head title={title} />}
@@ -45,19 +33,81 @@ export function AdminShell({ title, children }: AdminShellProps) {
                                     Mara Diz
                                 </span>
                             </Link>
-                            <NavLink href="/admin/forms" label="Formularios" />
+                            <div className="hidden items-center gap-1 md:flex">
+                                {adminNavItems.map((item) => (
+                                    <NavLink key={item.href} href={item.href} match={item.match}>
+                                        {item.label}
+                                    </NavLink>
+                                ))}
+                            </div>
                         </div>
+
                         <button
-                            onClick={() => router.post('/admin/logout')}
-                            className={buttonClass('ghost')}
+                            onClick={logout}
+                            className={cn(buttonClass('ghost'), 'hidden md:inline-flex')}
                         >
                             Cerrar sesión
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setMobileOpen((open) => !open)}
+                            aria-label="Abrir menú"
+                            aria-expanded={mobileOpen}
+                            className="grid size-9 place-items-center rounded-full text-ink transition-colors duration-200 hover:bg-white/50 md:hidden"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="size-5"
+                                aria-hidden="true"
+                            >
+                                {mobileOpen ? (
+                                    <>
+                                        <path d="M18 6 6 18" />
+                                        <path d="m6 6 12 12" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <path d="M4 6h16" />
+                                        <path d="M4 12h16" />
+                                        <path d="M4 18h16" />
+                                    </>
+                                )}
+                            </svg>
+                        </button>
                     </nav>
+
+                    {mobileOpen && (
+                        <div className="glass mx-auto mt-2 flex max-w-6xl flex-col gap-1 rounded-[22px] p-3 md:hidden">
+                            {adminNavItems.map((item) => (
+                                <NavLink
+                                    key={item.href}
+                                    href={item.href}
+                                    match={item.match}
+                                    onNavigate={() => setMobileOpen(false)}
+                                    className="px-4 py-2.5"
+                                >
+                                    {item.label}
+                                </NavLink>
+                            ))}
+                            <button
+                                onClick={logout}
+                                className={cn(
+                                    buttonClass('ghost'),
+                                    'justify-start px-4 py-2.5 text-left',
+                                )}
+                            >
+                                Cerrar sesión
+                            </button>
+                        </div>
+                    )}
                 </header>
-                <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
-                    {children}
-                </main>
+                <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">{children}</main>
             </div>
         </>
     );

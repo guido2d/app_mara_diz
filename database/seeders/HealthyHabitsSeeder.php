@@ -62,12 +62,5 @@ class HealthyHabitsSeeder extends Seeder
                 $question->options()->create([...$option, 'position' => $p + 1]);
             }
         }
-
-        // Max posible = 27 preguntas * 1 = 27 (a mayor puntaje, mejores hábitos)
-        $evaluation->scoreRanges()->createMany([
-            ['min_points' => 0, 'max_points' => 9, 'result_text' => 'Hábitos saludables bajos: hay amplio margen de mejora.', 'position' => 1],
-            ['min_points' => 10, 'max_points' => 18, 'result_text' => 'Hábitos saludables moderados: buen punto de partida.', 'position' => 2],
-            ['min_points' => 19, 'max_points' => 27, 'result_text' => 'Hábitos saludables altos: cuidás muy bien tu bienestar.', 'position' => 3],
-        ]);
     }
 }

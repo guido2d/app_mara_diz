@@ -24,11 +24,13 @@ it('computes the max possible points from scored questions only', function () {
     expect($evaluation->maxPossiblePoints())->toBe(8); // 3 + 5
 });
 
-it('checks whether a range contains a score inclusively', function () {
-    $evaluation = Evaluation::factory()->create();
-    $range = $evaluation->scoreRanges()->create(['min_points' => 3, 'max_points' => 6, 'result_text' => 'Medio', 'position' => 2]);
+it('reports whether an evaluation is scored based on its question types', function () {
+    $scored = Evaluation::factory()->create();
+    $scored->questions()->create(['label' => 'A', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
 
-    expect($range->contains(3))->toBeTrue()
-        ->and($range->contains(6))->toBeTrue()
-        ->and($range->contains(7))->toBeFalse();
+    $informative = Evaluation::factory()->create();
+    $informative->questions()->create(['label' => 'B', 'type' => QuestionType::Textarea, 'required' => false, 'position' => 1]);
+
+    expect($scored->isScored())->toBeTrue()
+        ->and($informative->isScored())->toBeFalse();
 });

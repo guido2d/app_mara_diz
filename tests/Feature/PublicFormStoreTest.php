@@ -12,8 +12,6 @@ function openFormWithRadio(): array
     $q = $evaluation->questions()->create(['label' => 'Q1', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
     $low = $q->options()->create(['label' => 'Nunca', 'points' => 0, 'position' => 1]);
     $high = $q->options()->create(['label' => 'Siempre', 'points' => 3, 'position' => 2]);
-    $evaluation->scoreRanges()->create(['min_points' => 0, 'max_points' => 1, 'result_text' => 'Bajo', 'position' => 1]);
-    $evaluation->scoreRanges()->create(['min_points' => 2, 'max_points' => 3, 'result_text' => 'Alto', 'position' => 2]);
 
     $form = Form::factory()->create();
     $form->evaluations()->attach($evaluation, ['position' => 1]);
@@ -33,7 +31,7 @@ function validProfile(array $extra = []): array
     ], $extra);
 }
 
-it('stores a submission with answers and computed result, then redirects to thank-you', function () {
+it('stores a submission with a snapshotted answer and total, then redirects to thank-you', function () {
     [$form, $campaign, $q, $high] = openFormWithRadio();
 
     $this->post("/f/{$form->slug}", validProfile([
@@ -41,10 +39,39 @@ it('stores a submission with answers and computed result, then redirects to than
     ]))->assertRedirect("/f/{$form->slug}/gracias");
 
     $submission = Submission::first();
+    $answer = $submission->answers->first();
+
     expect($submission->work_email)->toBe('ana@empresa.test')
         ->and($submission->answers)->toHaveCount(1)
-        ->and($submission->results->first()->total_points)->toBe(3)
-        ->and($submission->results->first()->result_text)->toBe('Alto');
+        ->and($answer->question_label)->toBe('Q1')
+        ->and($answer->option_label)->toBe('Siempre')
+        ->and($answer->option_points)->toBe(3)
+        ->and($submission->results->first()->total_points)->toBe(3);
+});
+
+it('normalizes the work email (trim + lowercase) on store', function () {
+    [$form, $campaign, $q, $high] = openFormWithRadio();
+
+    $this->post("/f/{$form->slug}", validProfile([
+        'work_email' => '  Ana@Empresa.TEST ',
+        'answers' => [$q->id => $high->id],
+    ]))->assertRedirect("/f/{$form->slug}/gracias");
+
+    expect(Submission::first()->work_email)->toBe('ana@empresa.test');
+});
+
+it('blocks a duplicate email regardless of case or spacing', function () {
+    [$form, $campaign, $q, $high] = openFormWithRadio();
+    Submission::factory()->for($campaign)->create(['work_email' => 'ana@empresa.test']);
+
+    $this->from("/f/{$form->slug}")
+        ->post("/f/{$form->slug}", validProfile([
+            'work_email' => 'ANA@empresa.test',
+            'answers' => [$q->id => $high->id],
+        ]))
+        ->assertSessionHasErrors('work_email');
+
+    expect(Submission::where('work_email', 'ana@empresa.test')->count())->toBe(1);
 });
 
 it('stores the medical access authorization', function () {

@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
 interface Answer {
     question: string;
     value: string | null;
+    points: number | null;
 }
-interface Result {
+interface EvaluationGroup {
     evaluation: string;
-    total_points: number;
-    result_text: string;
+    total_points: number | null;
+    answers: Answer[];
 }
 interface Submission {
     first_name: string;
@@ -22,8 +24,7 @@ interface Submission {
     work_email: string;
     phone: string;
     authorizes_medical_access: boolean;
-    answers: Answer[];
-    results: Result[];
+    evaluations: EvaluationGroup[];
 }
 
 function ProfileItem({
@@ -34,11 +35,83 @@ function ProfileItem({
     value: string | number;
 }) {
     return (
-        <div>
+        <div className="min-w-0 rounded-xl border border-[rgba(26,24,48,0.08)] bg-white/40 px-4 py-3">
             <dt className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
                 {label}
             </dt>
-            <dd className="mt-0.5 text-sm text-ink">{value}</dd>
+            <dd className="mt-1 text-sm text-ink [overflow-wrap:anywhere]">
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function EvaluationPanel({ group }: { group: EvaluationGroup }) {
+    const [open, setOpen] = useState(false);
+    const panelId = `eval-${group.evaluation.replace(/\s+/g, '-')}`;
+
+    return (
+        <div className="overflow-hidden rounded-xl border border-[rgba(26,24,48,0.08)] bg-white/40">
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/50"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 shrink-0 text-ink-50 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+                    aria-hidden="true"
+                >
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+                <span className="flex-1 text-sm font-medium text-ink">
+                    {group.evaluation}
+                </span>
+                <span className="font-mono text-[11px] text-ink-50">
+                    {group.answers.length} resp.
+                </span>
+                {group.total_points !== null && (
+                    <span className="rounded-full bg-indigo/10 px-2.5 py-1 font-mono text-xs font-semibold text-indigo">
+                        {group.total_points} pts
+                    </span>
+                )}
+            </button>
+
+            {open && (
+                <div
+                    id={panelId}
+                    className="flex flex-col divide-y divide-[rgba(26,24,48,0.07)] border-t border-[rgba(26,24,48,0.08)] px-4"
+                >
+                    {group.answers.map((a, i) => (
+                        <div
+                            key={i}
+                            className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:justify-between sm:gap-4"
+                        >
+                            <span className="order-2 text-ink-50 sm:order-1">
+                                {a.question}
+                            </span>
+                            <span className="order-1 flex items-center gap-2 sm:order-2 sm:shrink-0 sm:text-right">
+                                <span className="font-medium text-ink">
+                                    {a.value ?? '—'}
+                                </span>
+                                {a.points !== null && (
+                                    <span className="font-mono text-[11px] text-ink-50">
+                                        {a.points} pts
+                                    </span>
+                                )}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -55,7 +128,7 @@ export default function ResultShow({ submission }: { submission: Submission }) {
                     <h2 className="mb-4 text-sm font-semibold text-ink">
                         Perfil
                     </h2>
-                    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         <ProfileItem
                             label="Función"
                             value={submission.role_function}
@@ -86,49 +159,17 @@ export default function ResultShow({ submission }: { submission: Submission }) {
                     </dl>
                 </GlassCard>
 
-                <GlassCard className="mb-5">
-                    <h2 className="mb-4 text-sm font-semibold text-ink">
+                <GlassCard>
+                    <h2 className="mb-1 text-sm font-semibold text-ink">
                         Resultados
                     </h2>
+                    <p className="mb-4 text-xs text-ink-50">
+                        Desplegá cada evaluación para ver las respuestas
+                        asociadas.
+                    </p>
                     <div className="flex flex-col gap-3">
-                        {submission.results.map((r, i) => (
-                            <div
-                                key={i}
-                                className="flex items-center justify-between rounded-xl border border-[rgba(26,24,48,0.08)] bg-white/40 px-4 py-3"
-                            >
-                                <span className="text-sm text-ink-50">
-                                    {r.evaluation}
-                                </span>
-                                <span className="flex items-baseline gap-2">
-                                    <strong className="text-ink">
-                                        {r.result_text}
-                                    </strong>
-                                    <span className="font-mono text-xs text-ink-50">
-                                        {r.total_points} pts
-                                    </span>
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </GlassCard>
-
-                <GlassCard>
-                    <h2 className="mb-4 text-sm font-semibold text-ink">
-                        Respuestas
-                    </h2>
-                    <div className="flex flex-col divide-y divide-[rgba(26,24,48,0.07)]">
-                        {submission.answers.map((a, i) => (
-                            <div
-                                key={i}
-                                className="flex justify-between gap-4 py-2.5 text-sm"
-                            >
-                                <span className="text-ink-50">
-                                    {a.question}
-                                </span>
-                                <span className="text-right font-medium text-ink">
-                                    {a.value ?? '—'}
-                                </span>
-                            </div>
+                        {submission.evaluations.map((group, i) => (
+                            <EvaluationPanel key={i} group={group} />
                         ))}
                     </div>
                 </GlassCard>

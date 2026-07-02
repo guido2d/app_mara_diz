@@ -48,12 +48,5 @@ class PhysicalSymptomsSeeder extends Seeder
                 $question->options()->create([...$option, 'position' => $p + 1]);
             }
         }
-
-        // Max posible = 12 preguntas * 3 = 36
-        $evaluation->scoreRanges()->createMany([
-            ['min_points' => 0, 'max_points' => 6, 'result_text' => 'Nivel de síntomas físicos bajo.', 'position' => 1],
-            ['min_points' => 7, 'max_points' => 18, 'result_text' => 'Nivel de síntomas físicos moderado.', 'position' => 2],
-            ['min_points' => 19, 'max_points' => 36, 'result_text' => 'Nivel de síntomas físicos alto.', 'position' => 3],
-        ]);
     }
 }
