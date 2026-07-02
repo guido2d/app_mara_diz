@@ -1,6 +1,9 @@
 import { Form, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { campaignActionIcons } from '@/components/ui/campaign-action-icons';
 import { GlassCard } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldError, Input, Label } from '@/components/ui/field';
 import {
     CardActions,
@@ -43,6 +46,29 @@ function CampaignActions({
     campaign: CampaignRow;
     hasOpen: boolean;
 }) {
+    const [pendingAction, setPendingAction] = useState<
+        'close' | 'reopen' | null
+    >(null);
+    const [processing, setProcessing] = useState(false);
+    const isClose = pendingAction === 'close';
+
+    const runAction = () => {
+        if (!pendingAction) {
+            return;
+        }
+
+        router.post(
+            `/admin/campaigns/${campaign.id}/${pendingAction}`,
+            {},
+            {
+                preserveScroll: true,
+                onStart: () => setProcessing(true),
+                onFinish: () => setProcessing(false),
+                onSuccess: () => setPendingAction(null),
+            },
+        );
+    };
+
     return (
         <>
             <Link
@@ -53,13 +79,7 @@ function CampaignActions({
             </Link>
             {campaign.is_open && (
                 <button
-                    onClick={() => {
-                        if (confirm(`¿Cerrar la campaña “${campaign.name}”?`)) {
-                            router.post(
-                                `/admin/campaigns/${campaign.id}/close`,
-                            );
-                        }
-                    }}
+                    onClick={() => setPendingAction('close')}
                     className="cursor-pointer text-danger hover:underline"
                 >
                     Cerrar
@@ -67,20 +87,48 @@ function CampaignActions({
             )}
             {!campaign.is_open && !hasOpen && (
                 <button
-                    onClick={() => {
-                        if (
-                            confirm(`¿Reabrir la campaña “${campaign.name}”?`)
-                        ) {
-                            router.post(
-                                `/admin/campaigns/${campaign.id}/reopen`,
-                            );
-                        }
-                    }}
+                    onClick={() => setPendingAction('reopen')}
                     className="cursor-pointer text-indigo hover:underline"
                 >
                     Reabrir
                 </button>
             )}
+
+            <ConfirmDialog
+                open={pendingAction !== null}
+                onClose={() => setPendingAction(null)}
+                onConfirm={runAction}
+                processing={processing}
+                tone={isClose ? 'danger' : 'primary'}
+                icon={
+                    isClose
+                        ? campaignActionIcons.close
+                        : campaignActionIcons.reopen
+                }
+                title={isClose ? 'Cerrar campaña' : 'Reabrir campaña'}
+                confirmLabel={isClose ? 'Cerrar campaña' : 'Reabrir campaña'}
+                processingLabel={isClose ? 'Cerrando…' : 'Reabriendo…'}
+                description={
+                    isClose ? (
+                        <>
+                            Se cerrará la campaña{' '}
+                            <strong className="font-semibold text-ink">
+                                {campaign.name}
+                            </strong>{' '}
+                            y dejará de recibir respuestas. Podés reabrirla más
+                            adelante.
+                        </>
+                    ) : (
+                        <>
+                            Se reabrirá la campaña{' '}
+                            <strong className="font-semibold text-ink">
+                                {campaign.name}
+                            </strong>{' '}
+                            para volver a recibir respuestas.
+                        </>
+                    )
+                }
+            />
         </>
     );
 }

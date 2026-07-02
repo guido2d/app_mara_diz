@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { buttonClass } from './button';
 
 interface ConfirmDialogProps {
@@ -15,8 +16,12 @@ interface ConfirmDialogProps {
     cancelLabel?: string;
     /** Visual tone of the confirm button. */
     tone?: 'danger' | 'primary';
+    /** Icon shown inside the header badge. Defaults to a trash can. */
+    icon?: React.ReactNode;
     /** Disables the buttons and shows a busy confirm label while an action runs. */
     processing?: boolean;
+    /** Label shown on the confirm button while `processing`. */
+    processingLabel?: string;
 }
 
 /**
@@ -34,7 +39,9 @@ export function ConfirmDialog({
     confirmLabel = 'Eliminar',
     cancelLabel = 'Cancelar',
     tone = 'danger',
+    icon,
     processing = false,
+    processingLabel = 'Eliminando…',
 }: ConfirmDialogProps) {
     const cancelRef = useRef<HTMLButtonElement>(null);
     const previouslyFocused = useRef<HTMLElement | null>(null);
@@ -71,13 +78,13 @@ export function ConfirmDialog({
         };
     }, [open, processing, onClose]);
 
-    if (!open) {
+    if (!open || typeof document === 'undefined') {
         return null;
     }
 
     const isDanger = tone === 'danger';
 
-    return (
+    return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             role="dialog"
@@ -115,23 +122,25 @@ export function ConfirmDialog({
                             : 'bg-indigo/10 text-indigo',
                     )}
                 >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={1.75}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-7 w-7"
-                        aria-hidden="true"
-                    >
-                        <path d="M3 6h18" />
-                        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                        <path d="M19 6l-.8 13a2 2 0 0 1-2 1.9H7.8a2 2 0 0 1-2-1.9L5 6" />
-                        <path d="M10 11v6" />
-                        <path d="M14 11v6" />
-                    </svg>
+                    {icon ?? (
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.75}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-7 w-7"
+                            aria-hidden="true"
+                        >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                            <path d="M19 6l-.8 13a2 2 0 0 1-2 1.9H7.8a2 2 0 0 1-2-1.9L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                        </svg>
+                    )}
                 </div>
 
                 <h2
@@ -193,10 +202,11 @@ export function ConfirmDialog({
                                 />
                             </svg>
                         )}
-                        {processing ? 'Eliminando…' : confirmLabel}
+                        {processing ? processingLabel : confirmLabel}
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

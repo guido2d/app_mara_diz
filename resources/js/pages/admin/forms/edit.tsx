@@ -1,6 +1,8 @@
 import { Form, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button, buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldError, Input, Label, Textarea } from '@/components/ui/field';
 import { AdminShell } from '@/layouts/admin-shell';
 
@@ -19,9 +21,20 @@ interface Props {
 }
 
 export default function FormEdit({ form, evaluations }: Props) {
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [processing, setProcessing] = useState(false);
+
+    const deleteForm = () => {
+        router.delete(`/admin/forms/${form.id}`, {
+            onStart: () => setProcessing(true),
+            onFinish: () => setProcessing(false),
+            onSuccess: () => setConfirmingDelete(false),
+        });
+    };
+
     return (
         <AdminShell title="Editar formulario">
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-3xl">
                 <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-ink">
                     Editar formulario
                 </h1>
@@ -107,20 +120,13 @@ export default function FormEdit({ form, evaluations }: Props) {
                                 Borrar formulario
                             </h2>
                             <p className="mt-0.5 text-xs text-ink-50">
-                                Esta acción es permanente y no se puede deshacer.
+                                Esta acción es permanente y no se puede
+                                deshacer.
                             </p>
                         </div>
                         <button
                             type="button"
-                            onClick={() => {
-                                if (
-                                    confirm(
-                                        `¿Borrar el formulario “${form.name}”?`,
-                                    )
-                                ) {
-                                    router.delete(`/admin/forms/${form.id}`);
-                                }
-                            }}
+                            onClick={() => setConfirmingDelete(true)}
                             className={buttonClass(
                                 'danger',
                                 'w-full border border-danger/40 bg-white/70 sm:w-auto',
@@ -131,6 +137,26 @@ export default function FormEdit({ form, evaluations }: Props) {
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={confirmingDelete}
+                onClose={() => setConfirmingDelete(false)}
+                onConfirm={deleteForm}
+                processing={processing}
+                title="Borrar formulario"
+                confirmLabel="Borrar formulario"
+                processingLabel="Borrando…"
+                description={
+                    <>
+                        Se eliminará el formulario{' '}
+                        <strong className="font-semibold text-ink">
+                            {form.name}
+                        </strong>{' '}
+                        junto con sus campañas y respuestas. Esta acción no se
+                        puede deshacer.
+                    </>
+                }
+            />
         </AdminShell>
     );
 }
