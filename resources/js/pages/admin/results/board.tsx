@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { Select } from '@/components/ui/field';
+import { Input, Select } from '@/components/ui/field';
 import {
     CardActions,
     CardField,
@@ -29,10 +29,15 @@ export default function ResultsBoard({
     submissions: SubmissionRow[];
 }) {
     const [formFilter, setFormFilter] = useState('');
+    const [nameQuery, setNameQuery] = useState('');
     const forms = Array.from(new Set(submissions.map((s) => s.form_name)));
-    const rows = formFilter
-        ? submissions.filter((s) => s.form_name === formFilter)
-        : submissions;
+    const normalizedQuery = nameQuery.trim().toLowerCase();
+    const rows = submissions.filter(
+        (s) =>
+            (!formFilter || s.form_name === formFilter) &&
+            (!normalizedQuery ||
+                s.name.toLowerCase().includes(normalizedQuery)),
+    );
 
     return (
         <AdminShell title="Resultados">
@@ -45,27 +50,42 @@ export default function ResultsBoard({
                         Todas las respuestas recibidas, de todas las campañas.
                     </p>
                 </div>
-                {forms.length > 1 && (
-                    <div className="w-full sm:w-56">
-                        <Select
-                            value={formFilter}
-                            onChange={(e) => setFormFilter(e.target.value)}
-                            aria-label="Filtrar por formulario"
-                        >
-                            <option value="">Todos los formularios</option>
-                            {forms.map((name) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </Select>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+                    <div className="w-full sm:w-64">
+                        <Input
+                            type="search"
+                            value={nameQuery}
+                            onChange={(e) => setNameQuery(e.target.value)}
+                            placeholder="Buscar por empleado…"
+                            aria-label="Buscar por nombre de empleado"
+                        />
                     </div>
-                )}
+                    {forms.length > 1 && (
+                        <div className="w-full sm:w-56">
+                            <Select
+                                value={formFilter}
+                                onChange={(e) => setFormFilter(e.target.value)}
+                                aria-label="Filtrar por formulario"
+                            >
+                                <option value="">Todos los formularios</option>
+                                {forms.map((name) => (
+                                    <option key={name} value={name}>
+                                        {name}
+                                    </option>
+                                ))}
+                            </Select>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {rows.length === 0 ? (
                 <div className="glass rounded-[22px] p-10 text-center">
-                    <p className="text-ink-50">Todavía no hay respuestas.</p>
+                    <p className="text-ink-50">
+                        {submissions.length === 0
+                            ? 'Todavía no hay respuestas.'
+                            : 'No hay respuestas que coincidan con la búsqueda.'}
+                    </p>
                 </div>
             ) : (
                 <>

@@ -20,7 +20,7 @@ class ResultBoardController extends Controller
                 'work_email' => $submission->work_email,
                 'form_name' => $submission->campaign->form->name,
                 'campaign_name' => $submission->campaign->name,
-                'submitted_at' => $submission->submitted_at->toDateTimeString(),
+                'submitted_at' => $submission->submitted_at->format('d-m-Y H:i'),
                 'total_points' => $submission->results->sum('total_points'),
             ]);
 

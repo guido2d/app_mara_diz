@@ -25,6 +25,15 @@ it('lists submissions across every campaign', function () {
         );
 });
 
+it('formats the submitted date as DD-MM-YYYY HH:MM', function () {
+    Submission::factory()->create([
+        'submitted_at' => '2026-07-02 14:35:12',
+    ]);
+
+    $this->get('/admin/results')
+        ->assertInertia(fn ($page) => $page->where('submissions.0.submitted_at', '02-07-2026 14:35'));
+});
+
 it('sums the total points of a submission', function () {
     $evaluation = Evaluation::factory()->create();
     $submission = Submission::factory()->create();
