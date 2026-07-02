@@ -16,7 +16,7 @@ export default function FormCreate({
 }) {
     return (
         <AdminShell title="Nuevo formulario">
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-3xl">
                 <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-ink">
                     Nuevo formulario
                 </h1>

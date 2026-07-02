@@ -7,7 +7,7 @@ import { AdminShell } from '@/layouts/admin-shell';
 export default function UserCreate() {
     return (
         <AdminShell title="Nuevo usuario">
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-3xl">
                 <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-ink">
                     Nuevo usuario
                 </h1>

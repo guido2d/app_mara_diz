@@ -11,7 +11,7 @@ interface Props {
 export default function UserEdit({ user }: Props) {
     return (
         <AdminShell title={`Editar — ${user.name}`}>
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-3xl">
                 <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-ink">
                     Editar usuario
                 </h1>
