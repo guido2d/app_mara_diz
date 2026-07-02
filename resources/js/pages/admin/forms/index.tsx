@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { buttonClass } from '@/components/ui/button';
 import {
@@ -132,16 +132,6 @@ function FormActions({ form }: { form: FormRow }) {
             >
                 Comparativo
             </Link>
-            <button
-                onClick={() => {
-                    if (confirm(`¿Borrar el formulario “${form.name}”?`)) {
-                        router.delete(`/admin/forms/${form.id}`);
-                    }
-                }}
-                className="cursor-pointer text-danger hover:underline"
-            >
-                Borrar
-            </button>
         </>
     );
 }

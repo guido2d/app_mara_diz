@@ -1,4 +1,4 @@
-import { Form, Link } from '@inertiajs/react';
+import { Form, Link, router } from '@inertiajs/react';
 import { Button, buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { FieldError, Input, Label, Textarea } from '@/components/ui/field';
@@ -99,6 +99,37 @@ export default function FormEdit({ form, evaluations }: Props) {
                         )}
                     </Form>
                 </GlassCard>
+
+                <div className="mt-6 rounded-[22px] border border-danger/25 bg-danger/5 p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-sm font-semibold text-ink">
+                                Borrar formulario
+                            </h2>
+                            <p className="mt-0.5 text-xs text-ink-50">
+                                Esta acción es permanente y no se puede deshacer.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (
+                                    confirm(
+                                        `¿Borrar el formulario “${form.name}”?`,
+                                    )
+                                ) {
+                                    router.delete(`/admin/forms/${form.id}`);
+                                }
+                            }}
+                            className={buttonClass(
+                                'danger',
+                                'w-full border border-danger/40 bg-white/70 sm:w-auto',
+                            )}
+                        >
+                            Borrar formulario
+                        </button>
+                    </div>
+                </div>
             </div>
         </AdminShell>
     );
