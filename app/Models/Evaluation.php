@@ -13,7 +13,15 @@ class Evaluation extends Model
     /** @use HasFactory<EvaluationFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'position'];
+    protected $fillable = ['name', 'slug', 'description', 'position', 'is_scored'];
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'is_scored' => 'boolean',
+        ];
+    }
 
     /** @return HasMany<Question, $this> */
     public function questions(): HasMany
@@ -28,13 +36,14 @@ class Evaluation extends Model
     }
 
     /**
-     * Whether this evaluation has at least one scored question (radio/select).
+     * Whether this evaluation totalizes points. Some evaluations use radio/select
+     * questions purely to classify (e.g. Sí/No/No sabe) and must not show points
+     * or a total, so scoring is an explicit property rather than inferred from
+     * the question types.
      */
     public function isScored(): bool
     {
-        return $this->questions()
-            ->get()
-            ->contains(fn (Question $q) => $q->type->isScored());
+        return $this->is_scored;
     }
 
     public function maxPossiblePoints(): int

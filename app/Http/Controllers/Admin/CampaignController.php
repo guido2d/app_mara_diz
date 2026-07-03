@@ -15,7 +15,7 @@ class CampaignController extends Controller
     public function index(Form $form): Response
     {
         return Inertia::render('admin/campaigns/index', [
-            'form' => ['id' => $form->id, 'name' => $form->name],
+            'form' => ['id' => $form->id, 'name' => $form->name, 'slug' => $form->slug],
             'campaigns' => $form->campaigns->map(fn (Campaign $c) => [
                 'id' => $c->id,
                 'name' => $c->name,

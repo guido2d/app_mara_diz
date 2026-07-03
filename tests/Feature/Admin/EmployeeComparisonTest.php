@@ -80,6 +80,27 @@ it('builds a comparison matrix with campaigns as columns in chronological order'
         );
 });
 
+it('orders the campaign columns by created_at ascending, not by starts_at', function () {
+    $evaluation = Evaluation::factory()->create(['name' => 'Estrés']);
+    $q = $evaluation->questions()->create(['label' => 'Frecuencia', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
+    $form = Form::factory()->create();
+    $form->evaluations()->attach($evaluation, ['position' => 1]);
+
+    // "Vieja" is created first but starts later than "Nueva"; created_at must win.
+    $vieja = Campaign::factory()->for($form)->create(['name' => 'Vieja', 'starts_at' => now()->addMonth()->toDateString(), 'ends_at' => now()->addMonths(2)->toDateString(), 'created_at' => now()->subDays(2)]);
+    $nueva = Campaign::factory()->for($form)->create(['name' => 'Nueva', 'starts_at' => now()->subMonth()->toDateString(), 'ends_at' => now()->toDateString(), 'created_at' => now()]);
+
+    answerFor($vieja, $q->id, 'Nunca', 0, 'ana@empresa.test');
+    answerFor($nueva, $q->id, 'Siempre', 3, 'ana@empresa.test');
+
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=ana@empresa.test")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('campaigns.0.name', 'Vieja')
+            ->where('campaigns.1.name', 'Nueva')
+        );
+});
+
 it('includes evaluations answered by a campaign even when they are no longer on the form', function () {
     [$form, $q, $c1, $c2] = comparisonFixture();
     answerFor($c1, $q->id, 'Nunca', 0, 'ana@empresa.test');
@@ -104,6 +125,29 @@ it('includes evaluations answered by a campaign even when they are no longer on 
             ->where('evaluations.1.questions.0.cells.1.display', '—')
             ->where('evaluations.1.totals.0.total', 1)
             ->where('evaluations.1.totals.1.total', null)
+        );
+});
+
+it('shows radio answers without points or totals for an unscored evaluation', function () {
+    // Classifying evaluation (Sí/No/No sabe) attached to the form; radios but no score.
+    $evaluation = Evaluation::factory()->unscored()->create(['name' => 'Síntomas o enfermedades']);
+    $q = $evaluation->questions()->create(['label' => 'Diabetes', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
+    $q->options()->create(['label' => 'Sí', 'points' => 0, 'position' => 1]);
+
+    $form = Form::factory()->create();
+    $form->evaluations()->attach($evaluation, ['position' => 1]);
+    $campaign = Campaign::factory()->for($form)->create(['name' => 'Q1']);
+
+    $submission = Submission::factory()->for($campaign)->create(['work_email' => 'ana@empresa.test']);
+    $submission->answers()->create(['question_id' => $q->id, 'question_label' => 'Diabetes', 'question_type' => QuestionType::Radio, 'option_label' => 'Sí', 'option_points' => 0]);
+
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=ana@empresa.test")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.scored', false)
+            ->where('evaluations.0.questions.0.cells.0.display', 'Sí')
+            ->where('evaluations.0.totals', [])
+            ->where('general_totals.0.total', 0)
         );
 });
 

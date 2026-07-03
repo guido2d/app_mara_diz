@@ -1,5 +1,6 @@
-import { GlassCard } from '@/components/ui/card';
+import { useState } from 'react';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
 interface Cell {
@@ -73,9 +74,6 @@ function CampaignHeader({ campaigns }: { campaigns: CampaignCol[] }) {
                         className="px-3 py-2 text-left text-sm font-semibold text-ink"
                     >
                         {c.name}
-                        <span className="ml-1 font-mono text-[10px] font-normal text-ink-50">
-                            {c.starts_at}
-                        </span>
                         {!c.answered && (
                             <span className="block font-mono text-[10px] font-normal text-ink-50">
                                 no respondió
@@ -85,6 +83,98 @@ function CampaignHeader({ campaigns }: { campaigns: CampaignCol[] }) {
                 ))}
             </tr>
         </thead>
+    );
+}
+
+function EvaluationCard({
+    evaluation,
+    campaigns,
+}: {
+    evaluation: EvaluationBlock;
+    campaigns: CampaignCol[];
+}) {
+    const [open, setOpen] = useState(true);
+    const panelId = `eval-${evaluation.id}`;
+
+    return (
+        <GlassCard className="mb-5">
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="flex w-full cursor-pointer items-center gap-3 text-left"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 shrink-0 text-ink-50 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+                    aria-hidden="true"
+                >
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+                <h2 className="flex-1 text-sm font-semibold text-ink">
+                    {evaluation.name}
+                    {!evaluation.scored && (
+                        <span className="ml-2 font-normal text-ink-50">
+                            (sin puntaje)
+                        </span>
+                    )}
+                </h2>
+            </button>
+
+            {open && (
+                <div id={panelId} className="mt-4 overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                        <CampaignHeader campaigns={campaigns} />
+                        <tbody>
+                            {evaluation.questions.map((q) => (
+                                <tr
+                                    key={q.id}
+                                    className="border-b border-[rgba(26,24,48,0.06)]"
+                                >
+                                    <td className="px-3 py-2.5 text-ink-50">
+                                        {q.label}
+                                    </td>
+                                    {q.cells.map((cell) => (
+                                        <td
+                                            key={cell.campaign_id}
+                                            className="px-3 py-2.5 font-medium text-ink"
+                                        >
+                                            {cell.display ?? (
+                                                <span className="text-ink-50">
+                                                    —
+                                                </span>
+                                            )}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            {evaluation.scored && (
+                                <tr className="border-t border-[rgba(26,24,48,0.14)]">
+                                    <td className="px-3 py-2.5 font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                                        Total
+                                    </td>
+                                    {evaluation.totals.map((t) => (
+                                        <td
+                                            key={t.campaign_id}
+                                            className="px-3 py-2.5 font-mono font-semibold text-ink"
+                                        >
+                                            {t.total ?? '—'}
+                                        </td>
+                                    ))}
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </GlassCard>
     );
 }
 
@@ -132,56 +222,11 @@ export default function EmployeeCompare({
             </GlassCard>
 
             {evaluations.map((evaluation) => (
-                <GlassCard key={evaluation.id} className="mb-5 overflow-x-auto">
-                    <h2 className="mb-4 text-sm font-semibold text-ink">
-                        {evaluation.name}
-                        {!evaluation.scored && (
-                            <span className="ml-2 font-normal text-ink-50">
-                                (sin puntaje)
-                            </span>
-                        )}
-                    </h2>
-                    <table className="w-full border-collapse text-sm">
-                        <CampaignHeader campaigns={campaigns} />
-                        <tbody>
-                            {evaluation.questions.map((q) => (
-                                <tr
-                                    key={q.id}
-                                    className="border-b border-[rgba(26,24,48,0.06)]"
-                                >
-                                    <td className="px-3 py-2.5 text-ink-50">
-                                        {q.label}
-                                    </td>
-                                    {q.cells.map((cell) => (
-                                        <td
-                                            key={cell.campaign_id}
-                                            className="px-3 py-2.5 font-medium text-ink"
-                                        >
-                                            {cell.display ?? (
-                                                <span className="text-ink-50">—</span>
-                                            )}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                            {evaluation.scored && (
-                                <tr className="border-t border-[rgba(26,24,48,0.14)]">
-                                    <td className="px-3 py-2.5 font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                                        Total
-                                    </td>
-                                    {evaluation.totals.map((t) => (
-                                        <td
-                                            key={t.campaign_id}
-                                            className="px-3 py-2.5 font-mono font-semibold text-ink"
-                                        >
-                                            {t.total ?? '—'}
-                                        </td>
-                                    ))}
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </GlassCard>
+                <EvaluationCard
+                    key={evaluation.id}
+                    evaluation={evaluation}
+                    campaigns={campaigns}
+                />
             ))}
 
             <GlassCard className="overflow-x-auto">

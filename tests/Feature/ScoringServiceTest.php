@@ -29,7 +29,7 @@ it('stores one total snapshot per scored evaluation from the frozen answer point
 });
 
 it('does not store a result for a purely informative evaluation', function () {
-    $evaluation = Evaluation::factory()->create();
+    $evaluation = Evaluation::factory()->unscored()->create();
     $evaluation->questions()->create(['label' => 'Comentario', 'type' => QuestionType::Textarea, 'required' => false, 'position' => 1]);
 
     $form = Form::factory()->create();

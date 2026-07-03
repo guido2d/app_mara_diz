@@ -15,6 +15,7 @@ class SymptomsDiseasesSeeder extends Seeder
             'slug' => 'sintomas-o-enfermedades',
             'description' => 'Indicá si presentás alguno de los siguientes síntomas o enfermedades.',
             'position' => 6,
+            'is_scored' => false,
         ]);
 
         /** @var array<int, array{label: string, points: int}> $yesNoDontKnow */

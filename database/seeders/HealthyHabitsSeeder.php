@@ -15,6 +15,7 @@ class HealthyHabitsSeeder extends Seeder
             'slug' => 'conductas-habitos-saludables',
             'description' => 'Evalúa la presencia de conductas y hábitos que favorecen el bienestar.',
             'position' => 4,
+            'is_scored' => true,
         ]);
 
         $yesNo = [

@@ -49,7 +49,7 @@ class EmployeeComparisonController extends Controller
         $email = mb_strtolower(trim((string) $request->query('email')));
         abort_if($email === '', 404);
 
-        $campaigns = $form->campaigns()->reorder('starts_at')->get();
+        $campaigns = $form->campaigns()->reorder('created_at')->get();
 
         $submissions = Submission::query()
             ->whereIn('campaign_id', $campaigns->pluck('id'))
@@ -70,7 +70,7 @@ class EmployeeComparisonController extends Controller
             $questions = $evaluation->questions->map(fn ($question) => [
                 'id' => $question->id,
                 'label' => $question->label,
-                'cells' => $campaigns->map(function ($campaign) use ($submissions, $question) {
+                'cells' => $campaigns->map(function ($campaign) use ($submissions, $question, $scored) {
                     $submission = $submissions->get($campaign->id);
 
                     if ($submission === null) {
@@ -80,7 +80,9 @@ class EmployeeComparisonController extends Controller
                     $answer = $submission->answers->firstWhere('question_id', $question->id);
                     $display = match (true) {
                         $answer === null => '—',
-                        $answer->option_label !== null => "{$answer->option_label} ({$answer->option_points})",
+                        $answer->option_label !== null => $scored
+                            ? "{$answer->option_label} ({$answer->option_points})"
+                            : $answer->option_label,
                         default => (string) $answer->value_text,
                     };
 

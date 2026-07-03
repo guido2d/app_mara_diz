@@ -34,7 +34,7 @@ class ResultController extends Controller
 
     public function show(Submission $submission): Response
     {
-        $submission->load('answers.question.evaluation', 'answers.option', 'results.evaluation');
+        $submission->load('answers.question.evaluation', 'answers.option', 'results.evaluation', 'campaign.form');
 
         $totalsByEvaluation = $submission->results->keyBy('evaluation_id');
 
@@ -43,14 +43,17 @@ class ResultController extends Controller
             ->map(function ($answers, $evaluationId) use ($totalsByEvaluation) {
                 $evaluation = $answers->first()->question->evaluation;
 
+                $scored = $evaluation->isScored();
+
                 return [
                     'evaluation' => $evaluation->name,
                     'position' => $evaluation->position,
-                    'total_points' => $totalsByEvaluation->get($evaluationId)?->total_points,
+                    'scored' => $scored,
+                    'total_points' => $scored ? $totalsByEvaluation->get($evaluationId)?->total_points : null,
                     'answers' => $answers->map(fn ($a) => [
                         'question' => $a->question->label,
                         'value' => $a->option?->label ?? $a->value_text,
-                        'points' => $a->option?->points,
+                        'points' => $scored ? $a->option?->points : null,
                     ])->values(),
                 ];
             })
@@ -58,6 +61,12 @@ class ResultController extends Controller
             ->values();
 
         return Inertia::render('admin/results/show', [
+            'campaign' => [
+                'id' => $submission->campaign->id,
+                'name' => $submission->campaign->name,
+                'form_id' => $submission->campaign->form->id,
+                'form_name' => $submission->campaign->form->name,
+            ],
             'submission' => [
                 'id' => $submission->id,
                 'first_name' => $submission->first_name,

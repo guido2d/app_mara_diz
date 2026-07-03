@@ -6,6 +6,17 @@ use App\Models\User;
 
 beforeEach(fn () => $this->actingAs(User::factory()->create()));
 
+it('renders the campaigns index with the form slug for the public link', function () {
+    $form = Form::factory()->create(['slug' => 'clima-laboral']);
+
+    $this->get("/admin/forms/{$form->id}/campaigns")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/campaigns/index')
+            ->where('form.slug', 'clima-laboral')
+        );
+});
+
 it('opens a new campaign for a form', function () {
     $form = Form::factory()->create();
 

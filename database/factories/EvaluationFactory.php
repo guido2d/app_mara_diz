@@ -18,6 +18,15 @@ class EvaluationFactory extends Factory
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1, 99999),
             'description' => fake()->sentence(),
             'position' => 0,
+            'is_scored' => true,
         ];
+    }
+
+    /**
+     * An evaluation whose radio/select questions only classify and carry no score.
+     */
+    public function unscored(): static
+    {
+        return $this->state(fn () => ['is_scored' => false]);
     }
 }

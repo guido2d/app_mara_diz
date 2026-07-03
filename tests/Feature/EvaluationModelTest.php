@@ -24,13 +24,15 @@ it('computes the max possible points from scored questions only', function () {
     expect($evaluation->maxPossiblePoints())->toBe(8); // 3 + 5
 });
 
-it('reports whether an evaluation is scored based on its question types', function () {
+it('reports whether an evaluation is scored from its explicit flag, not its question types', function () {
+    // Both have radio questions, but scoring is an explicit property: a classifying
+    // evaluation (e.g. Sí/No/No sabe) uses radios yet must not totalize.
     $scored = Evaluation::factory()->create();
     $scored->questions()->create(['label' => 'A', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
 
-    $informative = Evaluation::factory()->create();
-    $informative->questions()->create(['label' => 'B', 'type' => QuestionType::Textarea, 'required' => false, 'position' => 1]);
+    $classifying = Evaluation::factory()->unscored()->create();
+    $classifying->questions()->create(['label' => 'B', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
 
     expect($scored->isScored())->toBeTrue()
-        ->and($informative->isScored())->toBeFalse();
+        ->and($classifying->isScored())->toBeFalse();
 });

@@ -18,12 +18,17 @@ it('lists submissions with their results for a campaign', function () {
         ->assertInertia(fn ($page) => $page->component('admin/results/index')->has('submissions', 1));
 });
 
-it('shows a single submission detail', function () {
+it('shows a single submission detail with its campaign context', function () {
     $submission = Submission::factory()->create(['first_name' => 'Ana']);
 
     $this->get("/admin/submissions/{$submission->id}")
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('admin/results/show')->where('submission.first_name', 'Ana'));
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/results/show')
+            ->where('submission.first_name', 'Ana')
+            ->where('campaign.id', $submission->campaign_id)
+            ->where('campaign.form_id', $submission->campaign->form_id)
+        );
 });
 
 it('corrects a mistyped work email and normalizes it', function () {

@@ -1,6 +1,7 @@
 import { Form, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import PublicFormController from '@/actions/App/Http/Controllers/PublicFormController';
+import { Button, buttonClass } from '@/components/ui/button';
 import { campaignActionIcons } from '@/components/ui/campaign-action-icons';
 import { GlassCard } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -27,7 +28,7 @@ interface CampaignRow {
     submissions_count: number;
 }
 interface Props {
-    form: { id: number; name: string };
+    form: { id: number; name: string; slug: string };
     campaigns: CampaignRow[];
 }
 
@@ -145,13 +146,39 @@ export default function CampaignsIndex({ form, campaigns }: Props) {
                 >
                     ← Formularios
                 </Link>
-                <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink">
-                    Campañas — {form.name}
-                </h1>
-                <p className="mt-1 text-sm text-ink-50">
-                    Cada campaña abre una ronda de respuestas. Solo puede haber
-                    una campaña abierta por vez.
-                </p>
+                <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
+                            Campañas — {form.name}
+                        </h1>
+                        <p className="mt-1 text-sm text-ink-50">
+                            Cada campaña abre una ronda de respuestas. Solo puede
+                            haber una campaña abierta por vez.
+                        </p>
+                    </div>
+                    <a
+                        href={PublicFormController.show(form.slug).url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonClass('secondary')}
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                        >
+                            <path d="M15 3h6v6" />
+                            <path d="M10 14 21 3" />
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        </svg>
+                        Ver formulario público
+                    </a>
+                </div>
             </div>
 
             {!hasOpen && (

@@ -1,5 +1,6 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Button, buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { FieldError, Input, Label } from '@/components/ui/field';
@@ -29,6 +30,12 @@ interface Submission {
     phone: string;
     authorizes_medical_access: boolean;
     evaluations: EvaluationGroup[];
+}
+interface Campaign {
+    id: number;
+    name: string;
+    form_id: number;
+    form_name: string;
 }
 
 function ProfileItem({
@@ -65,18 +72,31 @@ function EditableEmail({
                 <dt className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
                     Email
                 </dt>
-                <dd className="mt-1 flex items-start justify-between gap-2 text-sm text-ink">
-                    <span className="min-w-0 [overflow-wrap:anywhere]">
-                        {email}
-                    </span>
+                <dd className="mt-1 text-sm [overflow-wrap:anywhere] text-ink">
+                    {email}
+                </dd>
+                <div className="mt-2.5 flex justify-end">
                     <button
                         type="button"
                         onClick={() => setEditing(true)}
-                        className="shrink-0 cursor-pointer font-mono text-[11px] text-indigo hover:underline"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-indigo/25 px-2.5 py-1 font-mono text-[11px] tracking-[0.04em] text-indigo uppercase transition-colors duration-200 hover:bg-indigo/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo/45"
                     >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                            className="h-3 w-3"
+                        >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                        </svg>
                         Editar
                     </button>
-                </dd>
+                </div>
             </div>
         );
     }
@@ -201,13 +221,79 @@ function EvaluationPanel({ group }: { group: EvaluationGroup }) {
     );
 }
 
-export default function ResultShow({ submission }: { submission: Submission }) {
+export default function ResultShow({
+    campaign,
+    submission,
+}: {
+    campaign: Campaign;
+    submission: Submission;
+}) {
     return (
         <AdminShell title={`${submission.first_name} ${submission.last_name}`}>
-            <div className="mx-auto max-w-3xl">
-                <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-ink">
-                    {submission.first_name} {submission.last_name}
-                </h1>
+            <div className="mx-auto max-w-5xl">
+                <Breadcrumbs
+                    items={[
+                        { label: 'Formularios', href: '/admin/forms' },
+                        {
+                            label: campaign.form_name,
+                            href: `/admin/forms/${campaign.form_id}/campaigns`,
+                        },
+                        {
+                            label: `Resultados · ${campaign.name}`,
+                            href: `/admin/campaigns/${campaign.id}/results`,
+                        },
+                        {
+                            label: `${submission.first_name} ${submission.last_name}`,
+                        },
+                    ]}
+                />
+
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
+                        {submission.first_name} {submission.last_name}
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href={`/admin/campaigns/${campaign.id}/results`}
+                            className={buttonClass('ghost')}
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                            >
+                                <path d="M19 12H5" />
+                                <path d="m12 19-7-7 7-7" />
+                            </svg>
+                            Volver
+                        </Link>
+                        <Link
+                            href={`/admin/forms/${campaign.form_id}/employees/compare?email=${encodeURIComponent(submission.work_email)}`}
+                            className={buttonClass('secondary')}
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                            >
+                                <path d="M3 3v18h18" />
+                                <rect x="7" y="10" width="3" height="8" rx="1" />
+                                <rect x="14" y="5" width="3" height="13" rx="1" />
+                            </svg>
+                            Comparar
+                        </Link>
+                    </div>
+                </div>
 
                 <GlassCard className="mb-5">
                     <h2 className="mb-4 text-sm font-semibold text-ink">
