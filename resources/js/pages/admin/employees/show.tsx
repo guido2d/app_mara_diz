@@ -1,5 +1,7 @@
+import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
@@ -93,7 +95,7 @@ function EvaluationCard({
     evaluation: EvaluationBlock;
     campaigns: CampaignCol[];
 }) {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
     const panelId = `eval-${evaluation.id}`;
 
     return (
@@ -178,12 +180,132 @@ function EvaluationCard({
     );
 }
 
+function ScoreSummary({
+    campaigns,
+    evaluations,
+}: {
+    campaigns: CampaignCol[];
+    evaluations: EvaluationBlock[];
+}) {
+    const scored = evaluations.filter((e) => e.scored);
+
+    if (scored.length === 0 || campaigns.length === 0) {
+        return null;
+    }
+
+    const totalFor = (evaluation: EvaluationBlock, campaignId: number) =>
+        evaluation.totals.find((t) => t.campaign_id === campaignId)?.total ?? null;
+
+    const first = campaigns[0];
+    const last = campaigns[campaigns.length - 1];
+    const showDiff = campaigns.length >= 2 && first.id !== last.id;
+
+    const diffFor = (evaluation: EvaluationBlock) => {
+        const a = totalFor(evaluation, first.id);
+        const b = totalFor(evaluation, last.id);
+        if (a === null || b === null || a === 0) {
+            return null;
+        }
+        return ((b - a) / a) * 100;
+    };
+
+    return (
+        <GlassCard className="mb-5 overflow-x-auto">
+            <h2 className="mb-4 text-sm font-semibold text-ink">
+                Puntajes por campaña
+            </h2>
+            <table className="w-full border-collapse text-sm">
+                <thead>
+                    <tr className="border-b border-[rgba(26,24,48,0.10)]">
+                        <th className="px-3 py-2 text-left font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                            Campaña
+                        </th>
+                        {scored.map((e) => (
+                            <th
+                                key={e.id}
+                                className="px-3 py-2 text-left text-sm font-semibold text-ink"
+                            >
+                                {e.name}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {campaigns.map((c) => (
+                        <tr
+                            key={c.id}
+                            className="border-b border-[rgba(26,24,48,0.06)]"
+                        >
+                            <td className="px-3 py-2.5 font-medium text-ink">
+                                {c.name}
+                                {!c.answered && (
+                                    <span className="block font-mono text-[10px] font-normal text-ink-50">
+                                        no respondió
+                                    </span>
+                                )}
+                            </td>
+                            {scored.map((e) => {
+                                const total = totalFor(e, c.id);
+                                return (
+                                    <td
+                                        key={e.id}
+                                        className="px-3 py-2.5 font-mono font-semibold text-ink"
+                                    >
+                                        {total ?? (
+                                            <span className="text-ink-50">—</span>
+                                        )}
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    ))}
+                    {showDiff && (
+                        <tr className="border-t border-[rgba(26,24,48,0.14)]">
+                            <td className="px-3 py-2.5 font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                                Diferencia %
+                                <span className="block font-sans text-[10px] tracking-normal normal-case">
+                                    {first.name} → {last.name}
+                                </span>
+                            </td>
+                            {scored.map((e) => {
+                                const diff = diffFor(e);
+                                return (
+                                    <td
+                                        key={e.id}
+                                        className="px-3 py-2.5 font-mono font-semibold"
+                                    >
+                                        {diff === null ? (
+                                            <span className="text-ink-50">—</span>
+                                        ) : (
+                                            <span
+                                                className={
+                                                    diff > 0
+                                                        ? 'text-emerald-600'
+                                                        : diff < 0
+                                                          ? 'text-rose-600'
+                                                          : 'text-ink'
+                                                }
+                                            >
+                                                {diff > 0 ? '+' : ''}
+                                                {diff.toFixed(1)}%
+                                            </span>
+                                        )}
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </GlassCard>
+    );
+}
+
 export default function EmployeeCompare({
     form,
     employee,
     campaigns,
     evaluations,
-    general_totals,
 }: Props) {
     return (
         <AdminShell title={`${employee.name} — ${form.name}`}>
@@ -199,11 +321,32 @@ export default function EmployeeCompare({
                 ]}
             />
 
-            <div className="mb-6">
-                <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
-                    {employee.name}
-                </h1>
-                <p className="mt-1 text-sm text-ink-50">{employee.email}</p>
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
+                        {employee.name}
+                    </h1>
+                    <p className="mt-1 text-sm text-ink-50">{employee.email}</p>
+                </div>
+                <Link
+                    href={`/admin/forms/${form.id}/employees`}
+                    className={buttonClass('ghost')}
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                    >
+                        <path d="M19 12H5" />
+                        <path d="m12 19-7-7 7-7" />
+                    </svg>
+                    Volver
+                </Link>
             </div>
 
             <GlassCard className="mb-5">
@@ -221,6 +364,8 @@ export default function EmployeeCompare({
                 </dl>
             </GlassCard>
 
+            <ScoreSummary campaigns={campaigns} evaluations={evaluations} />
+
             {evaluations.map((evaluation) => (
                 <EvaluationCard
                     key={evaluation.id}
@@ -228,27 +373,6 @@ export default function EmployeeCompare({
                     campaigns={campaigns}
                 />
             ))}
-
-            <GlassCard className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                    <CampaignHeader campaigns={campaigns} />
-                    <tbody>
-                        <tr>
-                            <td className="px-3 py-2.5 font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                                Total general
-                            </td>
-                            {general_totals.map((t) => (
-                                <td
-                                    key={t.campaign_id}
-                                    className="px-3 py-2.5 font-mono text-base font-semibold text-ink"
-                                >
-                                    {t.total ?? '—'}
-                                </td>
-                            ))}
-                        </tr>
-                    </tbody>
-                </table>
-            </GlassCard>
         </AdminShell>
     );
 }
