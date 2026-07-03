@@ -31,6 +31,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('campaigns/{campaign}/results', [ResultController::class, 'index'])->name('campaigns.results');
     Route::get('submissions/{submission}', [ResultController::class, 'show'])->name('submissions.show');
+    Route::patch('submissions/{submission}/email', [ResultController::class, 'updateEmail'])->name('submissions.update-email');
     Route::delete('submissions/{submission}', [ResultController::class, 'destroy'])->name('submissions.destroy');
 
     Route::get('forms/{form}/employees', [EmployeeComparisonController::class, 'index'])->name('forms.employees.index');

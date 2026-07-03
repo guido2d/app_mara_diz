@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,6 +59,7 @@ class ResultController extends Controller
 
         return Inertia::render('admin/results/show', [
             'submission' => [
+                'id' => $submission->id,
                 'first_name' => $submission->first_name,
                 'last_name' => $submission->last_name,
                 'role_function' => $submission->role_function,
@@ -71,6 +74,33 @@ class ResultController extends Controller
                 'evaluations' => $evaluations,
             ],
         ]);
+    }
+
+    /**
+     * Correct a mistyped work email so the submission groups with the rest of
+     * the person's submissions in the comparison. The email is normalized (the
+     * model mutator lowercases + trims) and must stay unique within its campaign.
+     */
+    public function updateEmail(Request $request, Submission $submission): RedirectResponse
+    {
+        $request->merge([
+            'work_email' => mb_strtolower(trim((string) $request->input('work_email'))),
+        ]);
+
+        $validated = $request->validate([
+            'work_email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('submissions', 'work_email')
+                    ->where('campaign_id', $submission->campaign_id)
+                    ->ignore($submission->id),
+            ],
+        ]);
+
+        $submission->update($validated);
+
+        return back();
     }
 
     public function destroy(Submission $submission): RedirectResponse

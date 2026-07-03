@@ -80,6 +80,33 @@ it('builds a comparison matrix with campaigns as columns in chronological order'
         );
 });
 
+it('includes evaluations answered by a campaign even when they are no longer on the form', function () {
+    [$form, $q, $c1, $c2] = comparisonFixture();
+    answerFor($c1, $q->id, 'Nunca', 0, 'ana@empresa.test');
+    answerFor($c2, $q->id, 'Siempre', 3, 'ana@empresa.test');
+
+    // An evaluation the first campaign used but that is no longer attached to
+    // the form. Its answers/totals must still show up in the comparison.
+    $extra = Evaluation::factory()->create(['name' => 'Sueño']);
+    $extraQuestion = $extra->questions()->create(['label' => 'Horas', 'type' => QuestionType::Radio, 'required' => true, 'position' => 1]);
+
+    $first = Submission::query()->where('campaign_id', $c1->id)->where('work_email', 'ana@empresa.test')->firstOrFail();
+    $first->answers()->create(['question_id' => $extraQuestion->id, 'question_label' => 'Horas', 'question_type' => QuestionType::Radio, 'option_label' => 'Pocas', 'option_points' => 1]);
+    $first->results()->create(['evaluation_id' => $extra->id, 'total_points' => 1]);
+
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=ana@empresa.test")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('evaluations', 2)
+            ->where('evaluations.0.name', 'Estrés')
+            ->where('evaluations.1.name', 'Sueño')
+            ->where('evaluations.1.questions.0.cells.0.display', 'Pocas (1)')
+            ->where('evaluations.1.questions.0.cells.1.display', '—')
+            ->where('evaluations.1.totals.0.total', 1)
+            ->where('evaluations.1.totals.1.total', null)
+        );
+});
+
 it('marks a campaign where the employee did not answer', function () {
     [$form, $q, $c1, $c2] = comparisonFixture();
     // Only answered the second campaign.

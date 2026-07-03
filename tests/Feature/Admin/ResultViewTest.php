@@ -25,3 +25,23 @@ it('shows a single submission detail', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page->component('admin/results/show')->where('submission.first_name', 'Ana'));
 });
+
+it('corrects a mistyped work email and normalizes it', function () {
+    $submission = Submission::factory()->create(['work_email' => 'ana.mal@empresa.test']);
+
+    $this->patch("/admin/submissions/{$submission->id}/email", ['work_email' => '  ANA@Empresa.test '])
+        ->assertRedirect();
+
+    expect($submission->fresh()->work_email)->toBe('ana@empresa.test');
+});
+
+it('rejects an email already used by another submission in the same campaign', function () {
+    $campaign = Campaign::factory()->create();
+    Submission::factory()->for($campaign)->create(['work_email' => 'ana@empresa.test']);
+    $other = Submission::factory()->for($campaign)->create(['work_email' => 'beto@empresa.test']);
+
+    $this->patch("/admin/submissions/{$other->id}/email", ['work_email' => 'ana@empresa.test'])
+        ->assertSessionHasErrors('work_email');
+
+    expect($other->fresh()->work_email)->toBe('beto@empresa.test');
+});

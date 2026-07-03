@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Evaluation;
 use App\Models\Form;
+use App\Models\Question;
 use App\Models\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -62,7 +64,7 @@ class EmployeeComparisonController extends Controller
 
         $form->load('evaluations.questions');
 
-        $evaluations = $form->evaluations->map(function ($evaluation) use ($campaigns, $submissions) {
+        $evaluations = $this->comparableEvaluations($form, $submissions)->map(function ($evaluation) use ($campaigns, $submissions) {
             $scored = $evaluation->isScored();
 
             $questions = $evaluation->questions->map(fn ($question) => [
@@ -133,5 +135,39 @@ class EmployeeComparisonController extends Controller
             'evaluations' => $evaluations,
             'general_totals' => $generalTotals,
         ]);
+    }
+
+    /**
+     * All evaluations to show as rows: the ones currently attached to the form
+     * plus any evaluation the compared submissions actually answered but that is
+     * no longer on the form. This keeps every evaluation visible even when the
+     * form's evaluation set changed between campaigns, instead of only comparing
+     * the evaluations the campaigns still have in common.
+     *
+     * @param  Collection<int, Submission>  $submissions
+     * @return Collection<int, Evaluation>
+     */
+    private function comparableEvaluations(Form $form, Collection $submissions): Collection
+    {
+        $formEvaluationIds = $form->evaluations->pluck('id');
+
+        $answeredQuestionIds = $submissions
+            ->flatMap(fn (Submission $submission) => $submission->answers->pluck('question_id'))
+            ->unique();
+
+        $answeredEvaluationIds = Question::query()
+            ->whereIn('id', $answeredQuestionIds)
+            ->pluck('evaluation_id')
+            ->merge($submissions->flatMap(fn (Submission $submission) => $submission->results->pluck('evaluation_id')))
+            ->unique()
+            ->reject(fn ($id) => $formEvaluationIds->contains($id));
+
+        $extraEvaluations = Evaluation::query()
+            ->with('questions')
+            ->whereIn('id', $answeredEvaluationIds)
+            ->orderBy('position')
+            ->get();
+
+        return $form->evaluations->concat($extraEvaluations);
     }
 }
