@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { Link, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
@@ -14,15 +14,18 @@ interface Total {
     campaign_id: number;
     total: number | null;
 }
+type MarkColor = 'red' | 'green';
 interface QuestionRow {
     id: number;
     label: string;
+    mark: MarkColor | null;
     cells: Cell[];
 }
 interface EvaluationBlock {
     id: number;
     name: string;
     scored: boolean;
+    markable: boolean;
     questions: QuestionRow[];
     totals: Total[];
 }
@@ -63,7 +66,13 @@ function ProfileItem({ label, value }: { label: string; value: string | number }
     );
 }
 
-function CampaignHeader({ campaigns }: { campaigns: CampaignCol[] }) {
+function CampaignHeader({
+    campaigns,
+    markable,
+}: {
+    campaigns: CampaignCol[];
+    markable: boolean;
+}) {
     return (
         <thead>
             <tr className="border-b border-[rgba(26,24,48,0.10)]">
@@ -83,17 +92,129 @@ function CampaignHeader({ campaigns }: { campaigns: CampaignCol[] }) {
                         )}
                     </th>
                 ))}
+                {markable && (
+                    <th className="w-[84px] px-3 py-2 text-right font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                        Marca
+                    </th>
+                )}
             </tr>
         </thead>
+    );
+}
+
+const markRowClass: Record<MarkColor, string> = {
+    red: 'bg-rose-100',
+    green: 'bg-emerald-100',
+};
+
+const markButtonClass: Record<MarkColor, { on: string; off: string }> = {
+    red: {
+        on: 'border-rose-500 bg-rose-500',
+        off: 'border-rose-400 bg-rose-200 hover:bg-rose-300',
+    },
+    green: {
+        on: 'border-emerald-500 bg-emerald-500',
+        off: 'border-emerald-400 bg-emerald-200 hover:bg-emerald-300',
+    },
+};
+
+/**
+ * One question row. The colour flag is kept in local state so the click feels
+ * instant, and rolled back if the request fails.
+ */
+function QuestionRowItem({
+    question,
+    formId,
+    email,
+    markable,
+}: {
+    question: QuestionRow;
+    formId: number;
+    email: string;
+    markable: boolean;
+}) {
+    const [mark, setMark] = useState<MarkColor | null>(question.mark);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => setMark(question.mark), [question.mark]);
+
+    const pick = (color: MarkColor) => {
+        const previous = mark;
+        setMark(previous === color ? null : color);
+        setSaving(true);
+
+        router.post(
+            `/admin/forms/${formId}/employees/marks`,
+            { email, question_id: question.id, color },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onError: () => setMark(previous),
+                onFinish: () => setSaving(false),
+            },
+        );
+    };
+
+    return (
+        <tr
+            className={`border-b border-[rgba(26,24,48,0.06)] ${mark ? markRowClass[mark] : ''}`}
+        >
+            <td className="px-3 py-2.5 text-ink">{question.label}</td>
+            {question.cells.map((cell) => (
+                <td
+                    key={cell.campaign_id}
+                    className="px-3 py-2.5 font-medium text-ink"
+                >
+                    {cell.display ?? <span className="text-ink-50">—</span>}
+                </td>
+            ))}
+            {markable && (
+                <td className="px-3 py-2.5">
+                    <div className="flex items-center justify-end gap-1.5">
+                        {(['red', 'green'] as const).map((color) => (
+                            <button
+                                key={color}
+                                type="button"
+                                disabled={saving}
+                                onClick={() => pick(color)}
+                                aria-pressed={mark === color}
+                                title={
+                                    mark === color
+                                        ? 'Quitar marca'
+                                        : color === 'red'
+                                          ? 'Marcar en rojo'
+                                          : 'Marcar en verde'
+                                }
+                                className={`h-5 w-5 cursor-pointer rounded-full border-2 transition-colors disabled:cursor-wait disabled:opacity-60 ${
+                                    mark === color
+                                        ? markButtonClass[color].on
+                                        : markButtonClass[color].off
+                                }`}
+                            >
+                                <span className="sr-only">
+                                    {color === 'red'
+                                        ? 'Marcar en rojo'
+                                        : 'Marcar en verde'}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </td>
+            )}
+        </tr>
     );
 }
 
 function EvaluationCard({
     evaluation,
     campaigns,
+    formId,
+    email,
 }: {
     evaluation: EvaluationBlock;
     campaigns: CampaignCol[];
+    formId: number;
+    email: string;
 }) {
     const [open, setOpen] = useState(false);
     const panelId = `eval-${evaluation.id}`;
@@ -133,29 +254,19 @@ function EvaluationCard({
             {open && (
                 <div id={panelId} className="mt-4 overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
-                        <CampaignHeader campaigns={campaigns} />
+                        <CampaignHeader
+                            campaigns={campaigns}
+                            markable={evaluation.markable}
+                        />
                         <tbody>
                             {evaluation.questions.map((q) => (
-                                <tr
+                                <QuestionRowItem
                                     key={q.id}
-                                    className="border-b border-[rgba(26,24,48,0.06)]"
-                                >
-                                    <td className="px-3 py-2.5 text-ink-50">
-                                        {q.label}
-                                    </td>
-                                    {q.cells.map((cell) => (
-                                        <td
-                                            key={cell.campaign_id}
-                                            className="px-3 py-2.5 font-medium text-ink"
-                                        >
-                                            {cell.display ?? (
-                                                <span className="text-ink-50">
-                                                    —
-                                                </span>
-                                            )}
-                                        </td>
-                                    ))}
-                                </tr>
+                                    question={q}
+                                    formId={formId}
+                                    email={email}
+                                    markable={evaluation.markable}
+                                />
                             ))}
                             {evaluation.scored && (
                                 <tr className="border-t border-[rgba(26,24,48,0.14)]">
@@ -170,6 +281,7 @@ function EvaluationCard({
                                             {t.total ?? '—'}
                                         </td>
                                     ))}
+                                    {evaluation.markable && <td />}
                                 </tr>
                             )}
                         </tbody>
@@ -371,6 +483,8 @@ export default function EmployeeCompare({
                     key={evaluation.id}
                     evaluation={evaluation}
                     campaigns={campaigns}
+                    formId={form.id}
+                    email={employee.email}
                 />
             ))}
         </AdminShell>

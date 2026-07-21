@@ -16,6 +16,7 @@ class PhysicalSymptomsSeeder extends Seeder
             'description' => 'Mide la frecuencia de manifestaciones físicas asociadas al estrés.',
             'position' => 3,
             'is_scored' => true,
+            'allows_row_marks' => true,
         ]);
 
         $frequency = [

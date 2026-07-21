@@ -2,6 +2,7 @@
 
 use App\Enums\QuestionType;
 use App\Models\Campaign;
+use App\Models\EmployeeRowMark;
 use App\Models\Evaluation;
 use App\Models\Form;
 use App\Models\Submission;
@@ -179,4 +180,84 @@ it('returns 404 when no submission matches the email', function () {
 
     $this->get("/admin/forms/{$form->id}/employees/compare?email=nadie@empresa.test")
         ->assertNotFound();
+});
+
+it('flags a question row in red and green and persists it per employee', function () {
+    [$form, $q, $c1, $c2] = comparisonFixture();
+    $form->evaluations->first()->update(['allows_row_marks' => true]);
+    answerFor($c2, $q->id, 'Siempre', 3, 'ana@empresa.test');
+    answerFor($c2, $q->id, 'Nunca', 0, 'beto@empresa.test');
+
+    $this->post("/admin/forms/{$form->id}/employees/marks", [
+        'email' => 'ana@empresa.test',
+        'question_id' => $q->id,
+        'color' => 'red',
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('employee_row_marks', [
+        'form_id' => $form->id,
+        'work_email' => 'ana@empresa.test',
+        'question_id' => $q->id,
+        'color' => 'red',
+    ]);
+
+    // Switching colour replaces the flag instead of adding a second row.
+    $this->post("/admin/forms/{$form->id}/employees/marks", [
+        'email' => 'ana@empresa.test',
+        'question_id' => $q->id,
+        'color' => 'green',
+    ])->assertRedirect();
+
+    expect(EmployeeRowMark::query()->where('work_email', 'ana@empresa.test')->count())->toBe(1);
+
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=ana@empresa.test")
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.markable', true)
+            ->where('evaluations.0.questions.0.mark', 'green')
+        );
+
+    // Another employee keeps their own (empty) marking on the same question.
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=beto@empresa.test")
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.questions.0.mark', null));
+});
+
+it('clears the flag when the same colour is sent twice', function () {
+    [$form, $q, $c1, $c2] = comparisonFixture();
+    $form->evaluations->first()->update(['allows_row_marks' => true]);
+    answerFor($c2, $q->id, 'Siempre', 3, 'ana@empresa.test');
+
+    $payload = ['email' => 'ana@empresa.test', 'question_id' => $q->id, 'color' => 'red'];
+
+    $this->post("/admin/forms/{$form->id}/employees/marks", $payload);
+    $this->post("/admin/forms/{$form->id}/employees/marks", $payload);
+
+    $this->assertDatabaseCount('employee_row_marks', 0);
+});
+
+it('rejects flagging a row of an evaluation that does not allow marks', function () {
+    [$form, $q, $c1, $c2] = comparisonFixture();
+    answerFor($c2, $q->id, 'Siempre', 3, 'ana@empresa.test');
+
+    expect($form->evaluations->first()->allowsRowMarks())->toBeFalse();
+
+    $this->post("/admin/forms/{$form->id}/employees/marks", [
+        'email' => 'ana@empresa.test',
+        'question_id' => $q->id,
+        'color' => 'red',
+    ])->assertForbidden();
+
+    $this->get("/admin/forms/{$form->id}/employees/compare?email=ana@empresa.test")
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.markable', false));
+});
+
+it('rejects an unknown colour', function () {
+    [$form, $q, $c1, $c2] = comparisonFixture();
+    $form->evaluations->first()->update(['allows_row_marks' => true]);
+    answerFor($c2, $q->id, 'Siempre', 3, 'ana@empresa.test');
+
+    $this->post("/admin/forms/{$form->id}/employees/marks", [
+        'email' => 'ana@empresa.test',
+        'question_id' => $q->id,
+        'color' => 'blue',
+    ])->assertSessionHasErrors('color');
 });

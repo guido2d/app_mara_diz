@@ -36,4 +36,5 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('forms/{form}/employees', [EmployeeComparisonController::class, 'index'])->name('forms.employees.index');
     Route::get('forms/{form}/employees/compare', [EmployeeComparisonController::class, 'show'])->name('forms.employees.show');
+    Route::post('forms/{form}/employees/marks', [EmployeeComparisonController::class, 'mark'])->name('forms.employees.mark');
 });

@@ -19,7 +19,16 @@ class EvaluationFactory extends Factory
             'description' => fake()->sentence(),
             'position' => 0,
             'is_scored' => true,
+            'allows_row_marks' => false,
         ];
+    }
+
+    /**
+     * An evaluation whose rows can be flagged red or green in the comparison view.
+     */
+    public function markable(): static
+    {
+        return $this->state(fn () => ['allows_row_marks' => true]);
     }
 
     /**

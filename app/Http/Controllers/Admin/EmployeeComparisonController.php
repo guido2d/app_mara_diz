@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\RowMarkColor;
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeRowMark;
 use App\Models\Evaluation;
 use App\Models\Form;
 use App\Models\Question;
 use App\Models\Submission;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,12 +68,18 @@ class EmployeeComparisonController extends Controller
 
         $form->load('evaluations.questions');
 
-        $evaluations = $this->comparableEvaluations($form, $submissions)->map(function ($evaluation) use ($campaigns, $submissions) {
+        $marks = EmployeeRowMark::query()
+            ->where('form_id', $form->id)
+            ->where('work_email', $email)
+            ->pluck('color', 'question_id');
+
+        $evaluations = $this->comparableEvaluations($form, $submissions)->map(function ($evaluation) use ($campaigns, $submissions, $marks) {
             $scored = $evaluation->isScored();
 
             $questions = $evaluation->questions->map(fn ($question) => [
                 'id' => $question->id,
                 'label' => $question->label,
+                'mark' => $marks->get($question->id)?->value,
                 'cells' => $campaigns->map(function ($campaign) use ($submissions, $question, $scored) {
                     $submission = $submissions->get($campaign->id);
 
@@ -94,6 +104,7 @@ class EmployeeComparisonController extends Controller
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,
                 'scored' => $scored,
+                'markable' => $evaluation->allowsRowMarks(),
                 'questions' => $questions,
                 'totals' => $scored
                     ? $campaigns->map(fn ($campaign) => [
@@ -137,6 +148,42 @@ class EmployeeComparisonController extends Controller
             'evaluations' => $evaluations,
             'general_totals' => $generalTotals,
         ]);
+    }
+
+    /**
+     * Flag a question row red or green for one employee, or clear the flag when
+     * the same colour is sent again (the buttons toggle).
+     */
+    public function mark(Form $form, Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'question_id' => ['required', 'integer', 'exists:questions,id'],
+            'color' => ['required', Rule::enum(RowMarkColor::class)],
+        ]);
+
+        $email = mb_strtolower(trim($validated['email']));
+        $color = RowMarkColor::from($validated['color']);
+
+        $question = Question::query()->with('evaluation')->findOrFail($validated['question_id']);
+        abort_unless($question->evaluation->allowsRowMarks(), 403);
+
+        $existing = EmployeeRowMark::query()
+            ->where('form_id', $form->id)
+            ->where('work_email', $email)
+            ->where('question_id', $question->id)
+            ->first();
+
+        if ($existing?->color === $color) {
+            $existing->delete();
+        } else {
+            EmployeeRowMark::query()->updateOrCreate(
+                ['form_id' => $form->id, 'work_email' => $email, 'question_id' => $question->id],
+                ['color' => $color],
+            );
+        }
+
+        return back();
     }
 
     /**

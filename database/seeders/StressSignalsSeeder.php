@@ -16,6 +16,7 @@ class StressSignalsSeeder extends Seeder
             'description' => 'Indicá con qué frecuencia experimentás cada una de estas situaciones en el último tiempo.',
             'position' => 2,
             'is_scored' => true,
+            'allows_row_marks' => true,
         ]);
 
         /** @var array<int, array{label: string, points: int}> $frequency */

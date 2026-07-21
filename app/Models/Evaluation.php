@@ -13,13 +13,14 @@ class Evaluation extends Model
     /** @use HasFactory<EvaluationFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'position', 'is_scored'];
+    protected $fillable = ['name', 'slug', 'description', 'position', 'is_scored', 'allows_row_marks'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
             'is_scored' => 'boolean',
+            'allows_row_marks' => 'boolean',
         ];
     }
 
@@ -44,6 +45,15 @@ class Evaluation extends Model
     public function isScored(): bool
     {
         return $this->is_scored;
+    }
+
+    /**
+     * Whether the admin can flag each question row in red or green from the
+     * employee comparison view.
+     */
+    public function allowsRowMarks(): bool
+    {
+        return $this->allows_row_marks;
     }
 
     public function maxPossiblePoints(): int

@@ -16,6 +16,7 @@ class WorkSelfPerceptionSeeder extends Seeder
             'description' => 'Preguntas de respuesta numérica sobre la percepción del propio trabajo. No genera puntaje ni interpretación.',
             'position' => 5,
             'is_scored' => false,
+            'allows_row_marks' => true,
         ]);
 
         // Todas las preguntas son de respuesta numérica libre, sin puntaje ni rangos.
