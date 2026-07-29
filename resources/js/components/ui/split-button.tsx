@@ -105,21 +105,21 @@ export function SplitButton({
 
     return (
         <div ref={triggerRef} className="inline-flex">
-            <div className="inline-flex items-stretch overflow-hidden rounded-2xl border border-[rgba(26,24,48,0.18)] bg-ink/10">
+            <div className="inline-flex items-stretch overflow-hidden rounded-2xl bg-indigo/12 text-indigo">
                 <Link
                     href={primary.href}
-                    className="px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-white/70"
+                    className="px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:bg-indigo/20"
                 >
                     {primary.label}
                 </Link>
-                <span className="w-px self-stretch bg-[rgba(26,24,48,0.18)]" />
+                <span className="w-px self-stretch bg-indigo/20" />
                 <button
                     type="button"
                     onClick={toggle}
                     aria-haspopup="menu"
                     aria-expanded={open}
                     aria-label="Más acciones"
-                    className="cursor-pointer px-2.5 text-ink-50 transition-colors duration-200 hover:bg-white/70 hover:text-ink"
+                    className="cursor-pointer px-2.5 transition-colors duration-200 hover:bg-indigo/20"
                 >
                     <svg
                         viewBox="0 0 24 24"
