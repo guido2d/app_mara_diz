@@ -13,7 +13,7 @@ class Evaluation extends Model
     /** @use HasFactory<EvaluationFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'position', 'is_scored', 'allows_row_marks'];
+    protected $fillable = ['name', 'slug', 'description', 'position', 'is_scored', 'allows_row_marks', 'lower_is_better'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -21,6 +21,7 @@ class Evaluation extends Model
         return [
             'is_scored' => 'boolean',
             'allows_row_marks' => 'boolean',
+            'lower_is_better' => 'boolean',
         ];
     }
 
@@ -54,6 +55,17 @@ class Evaluation extends Model
     public function allowsRowMarks(): bool
     {
         return $this->allows_row_marks;
+    }
+
+    /**
+     * Which direction counts as an improvement. In symptom evaluations more
+     * points means worse, but in "Conductas y hábitos saludables" the scale is
+     * inverted: each healthy habit adds a point. The report colours its deltas
+     * with this so green always means "mejoró".
+     */
+    public function lowerIsBetter(): bool
+    {
+        return $this->lower_is_better;
     }
 
     public function maxPossiblePoints(): int

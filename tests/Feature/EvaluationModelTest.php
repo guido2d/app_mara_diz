@@ -36,3 +36,11 @@ it('reports whether an evaluation is scored from its explicit flag, not its ques
     expect($scored->isScored())->toBeTrue()
         ->and($classifying->isScored())->toBeFalse();
 });
+
+it('treats fewer points as an improvement by default', function () {
+    expect(Evaluation::factory()->create()->lowerIsBetter())->toBeTrue();
+});
+
+it('can mark an evaluation where more points is an improvement', function () {
+    expect(Evaluation::factory()->higherIsBetter()->create()->lowerIsBetter())->toBeFalse();
+});

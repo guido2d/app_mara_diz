@@ -20,6 +20,7 @@ class EvaluationFactory extends Factory
             'position' => 0,
             'is_scored' => true,
             'allows_row_marks' => false,
+            'lower_is_better' => true,
         ];
     }
 
@@ -37,5 +38,13 @@ class EvaluationFactory extends Factory
     public function unscored(): static
     {
         return $this->state(fn () => ['is_scored' => false]);
+    }
+
+    /**
+     * An evaluation where a higher score is the better outcome, such as healthy habits.
+     */
+    public function higherIsBetter(): static
+    {
+        return $this->state(fn () => ['lower_is_better' => false]);
     }
 }
