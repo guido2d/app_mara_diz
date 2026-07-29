@@ -4,7 +4,6 @@ import type { BarSeries } from '@/components/ui/bar-chart';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
-import { StatusPill } from '@/components/ui/table';
 import { AdminShell } from '@/layouts/admin-shell';
 
 const MAX_POINTS = 3;
@@ -12,10 +11,6 @@ const MAX_POINTS = 3;
 interface CampaignInfo {
     id: number;
     name: string;
-    starts_at: string;
-    ends_at: string;
-    is_open: boolean;
-    submissions_count: number;
 }
 
 interface CampaignValue {
@@ -39,9 +34,8 @@ interface EvaluationBlock {
 }
 
 interface Props {
-    form: { id: number; name: string; description: string | null };
+    form: { id: number; name: string };
     campaigns: CampaignInfo[];
-    participants_count: number;
     evaluations: EvaluationBlock[];
 }
 
@@ -73,101 +67,6 @@ function totalChange(totals: EvaluationBlock['totals']): number | null {
     }
 
     return ((last - first) / first) * 100;
-}
-
-function GeneralInfo({
-    form,
-    campaigns,
-    participants,
-}: {
-    form: Props['form'];
-    campaigns: CampaignInfo[];
-    participants: number;
-}) {
-    const headerClass =
-        'px-3 py-2 text-left font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase';
-
-    return (
-        <GlassCard className="mb-5">
-            <h2 className="text-sm font-semibold text-ink">
-                Información general
-            </h2>
-            {form.description && (
-                <p className="mt-1 text-sm text-ink-50">{form.description}</p>
-            )}
-
-            <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <div>
-                    <dt className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                        Campañas
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-lg font-semibold text-ink">
-                        {campaigns.length}
-                    </dd>
-                </div>
-                <div>
-                    <dt className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                        Participantes
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-lg font-semibold text-ink">
-                        {participants}
-                    </dd>
-                </div>
-                <div>
-                    <dt className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                        Respuestas
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-lg font-semibold text-ink">
-                        {campaigns.reduce(
-                            (sum, campaign) => sum + campaign.submissions_count,
-                            0,
-                        )}
-                    </dd>
-                </div>
-            </dl>
-
-            {campaigns.length > 0 && (
-                <div className="mt-5 overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                        <thead>
-                            <tr className="border-b border-[rgba(26,24,48,0.10)]">
-                                <th className={headerClass}>Campaña</th>
-                                <th className={headerClass}>Período</th>
-                                <th className={headerClass}>Respuestas</th>
-                                <th className={headerClass}>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {campaigns.map((campaign) => (
-                                <tr
-                                    key={campaign.id}
-                                    className="border-b border-[rgba(26,24,48,0.06)] last:border-0"
-                                >
-                                    <td className="px-3 py-2.5 font-medium text-ink">
-                                        {campaign.name}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-ink-50">
-                                        {campaign.starts_at} →{' '}
-                                        {campaign.ends_at}
-                                    </td>
-                                    <td className="px-3 py-2.5 font-mono font-semibold text-ink">
-                                        {campaign.submissions_count}
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        <StatusPill active={campaign.is_open}>
-                                            {campaign.is_open
-                                                ? 'Abierta'
-                                                : 'Cerrada'}
-                                        </StatusPill>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </GlassCard>
-    );
 }
 
 function EvaluationReport({
@@ -249,12 +148,7 @@ function EvaluationReport({
     );
 }
 
-export default function ReportShow({
-    form,
-    campaigns,
-    participants_count,
-    evaluations,
-}: Props) {
+export default function ReportShow({ form, campaigns, evaluations }: Props) {
     return (
         <AdminShell title={`Reporte — ${form.name}`}>
             <Breadcrumbs
@@ -288,12 +182,6 @@ export default function ReportShow({
                     Volver
                 </Link>
             </div>
-
-            <GeneralInfo
-                form={form}
-                campaigns={campaigns}
-                participants={participants_count}
-            />
 
             {evaluations.length === 0 ? (
                 <div className="glass rounded-[22px] p-10 text-center">

@@ -7,7 +7,6 @@ use App\Models\Campaign;
 use App\Models\Evaluation;
 use App\Models\Form;
 use App\Models\Question;
-use App\Models\Submission;
 use App\Models\SubmissionAnswer;
 use App\Models\SubmissionResult;
 use Illuminate\Support\Collection;
@@ -24,7 +23,7 @@ class FormReportController extends Controller
      */
     public function show(Form $form): Response
     {
-        $campaigns = $form->campaigns()->reorder('created_at')->withCount('submissions')->get();
+        $campaigns = $form->campaigns()->reorder('created_at')->get();
         $campaignIds = $campaigns->pluck('id');
 
         $evaluations = $form->evaluations()
@@ -42,20 +41,11 @@ class FormReportController extends Controller
             'form' => [
                 'id' => $form->id,
                 'name' => $form->name,
-                'description' => $form->description,
             ],
             'campaigns' => $campaigns->map(fn (Campaign $campaign) => [
                 'id' => $campaign->id,
                 'name' => $campaign->name,
-                'starts_at' => $campaign->starts_at->toDateString(),
-                'ends_at' => $campaign->ends_at->toDateString(),
-                'is_open' => $campaign->isOpen(),
-                'submissions_count' => $campaign->submissions_count,
             ])->values(),
-            'participants_count' => Submission::query()
-                ->whereIn('campaign_id', $campaignIds)
-                ->distinct()
-                ->count('work_email'),
             'evaluations' => $evaluations->map(fn (Evaluation $evaluation) => [
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,

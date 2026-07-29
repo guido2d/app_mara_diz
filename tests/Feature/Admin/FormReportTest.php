@@ -99,7 +99,6 @@ it('reports a campaign with no submissions as null instead of zero', function ()
         ->assertInertia(fn ($page) => $page
             ->where('evaluations.0.questions.0.values.1.average', null)
             ->where('evaluations.0.questions.0.values.1.answers', 0)
-            ->where('campaigns.1.submissions_count', 0)
         );
 });
 
@@ -112,7 +111,7 @@ it('reports a question nobody answered in a campaign as null', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('evaluations.0.questions.0.values.1.average', null)
-            ->where('campaigns.1.submissions_count', 1)
+            ->where('evaluations.0.questions.0.values.1.answers', 0)
         );
 });
 
@@ -152,17 +151,6 @@ it('orders campaigns by creation, not by start date', function () {
             ->where('campaigns.0.name', 'Primera toma')
             ->where('campaigns.1.name', 'Segunda toma')
         );
-});
-
-it('counts each participant once across campaigns', function () {
-    [$form, , , $shown, $first, $second] = reportFixture();
-    answerInCampaign($first, $shown, 1)->update(['work_email' => 'ana@empresa.test']);
-    answerInCampaign($second, $shown, 0)->update(['work_email' => 'ana@empresa.test']);
-    answerInCampaign($second, $shown, 3)->update(['work_email' => 'beto@empresa.test']);
-
-    $this->get("/admin/forms/{$form->id}/report")
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('participants_count', 2));
 });
 
 it('returns no evaluations when the form has no questions flagged', function () {
