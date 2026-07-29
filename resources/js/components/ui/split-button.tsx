@@ -105,21 +105,21 @@ export function SplitButton({
 
     return (
         <div ref={triggerRef} className="inline-flex">
-            <div className="inline-flex items-stretch overflow-hidden rounded-2xl border border-[rgba(26,24,48,0.12)] bg-white/70">
+            <div className="inline-flex items-stretch overflow-hidden rounded-2xl border border-[rgba(26,24,48,0.18)] bg-ink/10">
                 <Link
                     href={primary.href}
-                    className="px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-lift"
+                    className="px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-white/70"
                 >
                     {primary.label}
                 </Link>
-                <span className="w-px self-stretch bg-[rgba(26,24,48,0.12)]" />
+                <span className="w-px self-stretch bg-[rgba(26,24,48,0.18)]" />
                 <button
                     type="button"
                     onClick={toggle}
                     aria-haspopup="menu"
                     aria-expanded={open}
                     aria-label="Más acciones"
-                    className="cursor-pointer px-2.5 text-ink-50 transition-colors duration-200 hover:bg-lift hover:text-ink"
+                    className="cursor-pointer px-2.5 text-ink-50 transition-colors duration-200 hover:bg-white/70 hover:text-ink"
                 >
                     <svg
                         viewBox="0 0 24 24"
@@ -150,7 +150,7 @@ export function SplitButton({
                             left: position.left,
                             width: MENU_WIDTH,
                         }}
-                        className="z-50 flex flex-col rounded-2xl border border-[rgba(26,24,48,0.12)] bg-lift p-1.5 shadow-[0_12px_32px_-12px_rgba(26,24,48,0.35)]"
+                        className="z-50 flex flex-col rounded-2xl border border-[rgba(26,24,48,0.12)] bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(26,24,48,0.35)]"
                     >
                         {actions.map((action) => (
                             <Link
@@ -158,7 +158,7 @@ export function SplitButton({
                                 href={action.href}
                                 role="menuitem"
                                 onClick={() => setPosition(null)}
-                                className="rounded-xl px-3 py-2 text-left text-sm text-ink transition-colors duration-200 hover:bg-white/80"
+                                className="rounded-xl px-3 py-2 text-left text-sm text-ink transition-colors duration-200 hover:bg-lift"
                             >
                                 {action.label}
                             </Link>
