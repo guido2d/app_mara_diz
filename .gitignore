@@ -26,3 +26,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Capturas que Pest guarda cuando falla un test de navegador
+/tests/Browser/Screenshots
