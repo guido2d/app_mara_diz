@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             HealthyHabitsSeeder::class,
             WorkSelfPerceptionSeeder::class,
             SymptomsDiseasesSeeder::class,
+            ReportQuestionsSeeder::class,
         ]);
     }
 }
