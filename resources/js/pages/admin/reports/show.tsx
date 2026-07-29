@@ -8,19 +8,25 @@ import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
 /** Qué mide el reporte de una evaluación, definido en el seeder. */
-type ReportMetric = 'average' | 'positive_rate';
+type ReportMetric = 'average' | 'positive_rate' | 'yes_rate';
 
 /** Tope de la escala de las barras: 3 puntos o 100%. */
-const MAX: Record<ReportMetric, number> = { average: 3, positive_rate: 100 };
+const MAX: Record<ReportMetric, number> = {
+    average: 3,
+    positive_rate: 100,
+    yes_rate: 100,
+};
 
 const SCALE: Record<ReportMetric, BarScale> = {
     average: 'points',
     positive_rate: 'percent',
+    yes_rate: 'percent',
 };
 
 const CAPTION: Record<ReportMetric, string> = {
     average: 'promedio de puntos por pregunta',
     positive_rate: '% de personas que puntúan positivamente',
+    yes_rate: '% de personas con el síntoma o enfermedad',
 };
 
 interface CampaignInfo {
@@ -43,6 +49,7 @@ interface QuestionRow {
 interface EvaluationBlock {
     id: number;
     name: string;
+    is_scored: boolean;
     lower_is_better: boolean;
     metric: ReportMetric;
     totals: { campaign_id: number; average: number | null }[];
@@ -150,33 +157,42 @@ function EvaluationReport({
                     onClick={(event) => event.stopPropagation()}
                     className="cursor-default"
                 >
-                    <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
-                        {evaluation.totals.map((total, index) => (
-                            <div key={total.campaign_id}>
-                                <p className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                                    {campaigns[index]?.name}
+                    {/*
+                        Las evaluaciones que sólo clasifican — Síntomas o
+                        enfermedades — no suman puntaje: no hay total que mostrar
+                        y el bloque queda fuera en vez de rellenarse con guiones.
+                    */}
+                    {evaluation.is_scored && (
+                        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+                            {evaluation.totals.map((total, index) => (
+                                <div key={total.campaign_id}>
+                                    <p className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                                        {campaigns[index]?.name}
+                                    </p>
+                                    <p className="mt-0.5 font-mono text-xl font-semibold text-ink">
+                                        {total.average === null ? (
+                                            <span className="text-ink-50">
+                                                —
+                                            </span>
+                                        ) : (
+                                            total.average.toFixed(1)
+                                        )}
+                                    </p>
+                                </div>
+                            ))}
+                            {change !== null && (
+                                <p
+                                    className={`font-mono text-sm font-semibold ${improved ? 'text-emerald-600' : 'text-rose-600'}`}
+                                >
+                                    {change > 0 ? '▲' : '▼'}{' '}
+                                    {Math.abs(change).toFixed(1)}%
+                                    <span className="ml-1 font-sans text-[11px] font-normal text-ink-50">
+                                        puntaje total
+                                    </span>
                                 </p>
-                                <p className="mt-0.5 font-mono text-xl font-semibold text-ink">
-                                    {total.average === null ? (
-                                        <span className="text-ink-50">—</span>
-                                    ) : (
-                                        total.average.toFixed(1)
-                                    )}
-                                </p>
-                            </div>
-                        ))}
-                        {change !== null && (
-                            <p
-                                className={`font-mono text-sm font-semibold ${improved ? 'text-emerald-600' : 'text-rose-600'}`}
-                            >
-                                {change > 0 ? '▲' : '▼'}{' '}
-                                {Math.abs(change).toFixed(1)}%
-                                <span className="ml-1 font-sans text-[11px] font-normal text-ink-50">
-                                    puntaje total
-                                </span>
-                            </p>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-5 border-t border-[rgba(26,24,48,0.08)] pt-4">
                         <CampaignLegend campaigns={campaigns} />

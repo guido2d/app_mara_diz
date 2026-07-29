@@ -18,6 +18,13 @@ use Inertia\Response;
 class FormReportController extends Controller
 {
     /**
+     * The answer that counts as "tiene el síntoma" in evaluations reported as a
+     * yes rate. Answers store the option label denormalised, so the label is the
+     * only marker available: their options carry no points to tell them apart.
+     */
+    private const AFFIRMATIVE_LABEL = 'Sí';
+
+    /**
      * Aggregated report of a form: for every question flagged for the report,
      * the average score of each campaign, so the evolution between takes can be
      * read at a glance.
@@ -50,6 +57,7 @@ class FormReportController extends Controller
             'evaluations' => $evaluations->map(fn (Evaluation $evaluation) => [
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,
+                'is_scored' => $evaluation->isScored(),
                 'lower_is_better' => $evaluation->lowerIsBetter(),
                 'metric' => $evaluation->reportMetric()->value,
                 'totals' => $campaigns->map(fn (Campaign $campaign) => [
@@ -75,24 +83,24 @@ class FormReportController extends Controller
 
     /**
      * The number the report draws for one question and campaign, on the scale
-     * the evaluation asked for: average points, or the percentage of people who
-     * answered positively.
+     * the evaluation asked for: average points, the percentage of people who
+     * answered positively, or the percentage who answered "Sí".
      *
-     * @param  object{average: mixed, answers: mixed, positives: mixed}  $row
+     * @param  object{average: mixed, answers: mixed, positives: mixed, affirmatives: mixed}  $row
      */
     private function questionValue(Evaluation $evaluation, object $row): float
     {
-        if ($evaluation->reportMetric() === ReportMetric::PositiveRate) {
-            return round((int) $row->positives * 100 / (int) $row->answers, 1);
-        }
-
-        return round((float) $row->average, 2);
+        return match ($evaluation->reportMetric()) {
+            ReportMetric::PositiveRate => round((int) $row->positives * 100 / (int) $row->answers, 1),
+            ReportMetric::YesRate => round((int) $row->affirmatives * 100 / (int) $row->answers, 1),
+            ReportMetric::Average => round((float) $row->average, 2),
+        };
     }
 
     /**
-     * Average points, answer count and positive answer count per campaign and
-     * question, keyed by "campaignId-questionId". One grouped query instead of
-     * one per cell.
+     * Average points, answer count, positive answer count and affirmative answer
+     * count per campaign and question, keyed by "campaignId-questionId". One
+     * grouped query instead of one per cell.
      *
      * @param  Collection<int, int>  $campaignIds
      * @param  Collection<int, int>  $questionIds
@@ -117,6 +125,10 @@ class FormReportController extends Controller
                 DB::raw('COUNT(*) as answers'),
                 DB::raw('SUM(CASE WHEN submission_answers.option_points > 0 THEN 1 ELSE 0 END) as positives'),
             ])
+            ->selectRaw(
+                'SUM(CASE WHEN submission_answers.option_label = ? THEN 1 ELSE 0 END) as affirmatives',
+                [self::AFFIRMATIVE_LABEL],
+            )
             ->get()
             ->keyBy(fn (object $row) => "{$row->campaign_id}-{$row->question_id}");
     }

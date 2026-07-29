@@ -19,12 +19,17 @@ class ReportQuestionsSeeder extends Seeder
      * report must show them. The report order is not the form order: in the
      * psychic symptoms evaluation, question 19 comes before 18.
      *
+     * In "Síntomas o enfermedades" every Sí/No question enters the report and the
+     * four free-text ones — "indicar cuál", "medicación que toma" — stay out:
+     * they have no option to count.
+     *
      * @var array<string, list<int>>
      */
     private const REPORT_QUESTIONS = [
         'senales-de-estres' => [1, 3, 4, 6, 12, 16, 19, 18, 20, 21, 22, 23],
         'sintomas-fisicos' => [1, 2, 3, 5, 6, 8, 9, 10, 11, 12],
         'conductas-habitos-saludables' => [1, 3, 4, 7, 8, 12, 13, 17, 18, 19],
+        'sintomas-o-enfermedades' => [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 16],
     ];
 
     /**
@@ -43,11 +48,22 @@ class ReportQuestionsSeeder extends Seeder
      */
     private const POSITIVE_RATE = ['conductas-habitos-saludables'];
 
+    /**
+     * Evaluations reported as the percentage of people who answered "Sí". Their
+     * options are all worth zero points — they only classify — so the report
+     * counts the affirmative answers instead of adding up points.
+     *
+     * @var list<string>
+     */
+    private const YES_RATE = ['sintomas-o-enfermedades'];
+
     public function run(): void
     {
         Evaluation::query()->whereIn('slug', self::HIGHER_IS_BETTER)->update(['lower_is_better' => false]);
 
         Evaluation::query()->whereIn('slug', self::POSITIVE_RATE)->update(['report_metric' => ReportMetric::PositiveRate]);
+
+        Evaluation::query()->whereIn('slug', self::YES_RATE)->update(['report_metric' => ReportMetric::YesRate]);
 
         foreach (self::REPORT_QUESTIONS as $slug => $positions) {
             $evaluation = Evaluation::query()->where('slug', $slug)->first();

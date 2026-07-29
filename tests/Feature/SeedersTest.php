@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\QuestionType;
 use App\Enums\ReportMetric;
 use App\Models\Evaluation;
 use App\Models\Question;
@@ -67,6 +68,25 @@ it('flags the ten healthy habit questions for the report in the requested order'
 
     expect($positions->all())->toBe([1, 3, 4, 7, 8, 12, 13, 17, 18, 19])
         ->and(Question::whereNotNull('report_position')->count())->toBe(10);
+});
+
+it('flags every yes/no question of symptoms and diseases for the report, leaving the free-text ones out', function () {
+    $this->seed(SymptomsDiseasesSeeder::class);
+    $this->seed(ReportQuestionsSeeder::class);
+
+    $evaluation = Evaluation::where('slug', 'sintomas-o-enfermedades')->firstOrFail();
+    $positions = $evaluation->questions()->inReport()->pluck('position');
+
+    expect($positions->all())->toBe([1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 16])
+        ->and(Question::whereNotNull('report_position')->count())->toBe(14)
+        ->and($evaluation->questions()->inReport()->pluck('type')->unique()->all())->toBe([QuestionType::Radio]);
+});
+
+it('reports symptoms and diseases as a percentage of affirmative answers', function () {
+    $this->seed(SymptomsDiseasesSeeder::class);
+    $this->seed(ReportQuestionsSeeder::class);
+
+    expect(Evaluation::where('slug', 'sintomas-o-enfermedades')->firstOrFail()->reportMetric())->toBe(ReportMetric::YesRate);
 });
 
 it('marks healthy habits as an evaluation where more points is better', function () {

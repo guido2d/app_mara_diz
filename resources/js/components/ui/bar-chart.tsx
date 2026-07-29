@@ -6,7 +6,7 @@ export interface BarSeries {
     answers: number;
 }
 
-/** Qué mide la barra: puntos promedio o porcentaje de respuestas positivas. */
+/** Qué mide la barra: puntos promedio o porcentaje de personas. */
 export type BarScale = 'points' | 'percent';
 
 function formatValue(value: number, scale: BarScale): string {
@@ -15,7 +15,7 @@ function formatValue(value: number, scale: BarScale): string {
 
 function describeValue(value: number, max: number, scale: BarScale): string {
     return scale === 'percent'
-        ? `${Math.round(value)}% de respuestas positivas`
+        ? `${Math.round(value)}% de las personas`
         : `${value.toFixed(1)} puntos promedio sobre ${max}`;
 }
 

@@ -38,7 +38,7 @@ function reportFixture(): array
 }
 
 /** Record one person's answer to one question, plus the evaluation total. */
-function answerInCampaign(Campaign $campaign, Question $question, int $points, ?int $total = null): Submission
+function answerInCampaign(Campaign $campaign, Question $question, int $points, ?int $total = null, ?string $label = null): Submission
 {
     $submission = Submission::factory()->for($campaign)->create();
 
@@ -46,7 +46,7 @@ function answerInCampaign(Campaign $campaign, Question $question, int $points, ?
         'question_id' => $question->id,
         'question_label' => $question->label,
         'question_type' => QuestionType::Radio,
-        'option_label' => "Opción {$points}",
+        'option_label' => $label ?? "Opción {$points}",
         'option_points' => $points,
     ]);
 
@@ -108,6 +108,54 @@ it('reports the percentage of positive answers when the evaluation asks for it',
             ->where('evaluations.0.questions.0.values.0.answers', 3)
             ->where('evaluations.0.questions.0.values.1.value', 100)
         );
+});
+
+it('reports the percentage of people who answered yes when the evaluation asks for it', function () {
+    [$form, $evaluation, , $shown, $first, $second] = reportFixture();
+    $evaluation->update(['report_metric' => ReportMetric::YesRate, 'is_scored' => false]);
+
+    answerInCampaign($first, $shown, 0, label: 'Sí');
+    answerInCampaign($first, $shown, 0, label: 'No');
+    answerInCampaign($first, $shown, 0, label: 'No sabe');
+    answerInCampaign($second, $shown, 0, label: 'Sí');
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.metric', 'yes_rate')
+            ->where('evaluations.0.questions.0.values.0.value', 33.3)
+            ->where('evaluations.0.questions.0.values.0.answers', 3)
+            ->where('evaluations.0.questions.0.values.1.value', 100)
+        );
+});
+
+it('counts "No sabe" as somebody without the symptom, not as a missing answer', function () {
+    [$form, $evaluation, , $shown, $first] = reportFixture();
+    $evaluation->update(['report_metric' => ReportMetric::YesRate, 'is_scored' => false]);
+
+    answerInCampaign($first, $shown, 0, label: 'Sí');
+    answerInCampaign($first, $shown, 0, label: 'No sabe');
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.values.0.value', 50)
+            ->where('evaluations.0.questions.0.values.0.answers', 2)
+        );
+});
+
+it('exposes whether the evaluation totalizes points', function () {
+    [$form, $evaluation, , $shown, $first] = reportFixture();
+    answerInCampaign($first, $shown, 1);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.is_scored', true));
+
+    $evaluation->update(['is_scored' => false]);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.is_scored', false));
 });
 
 it('reports the average of the points by default', function () {
