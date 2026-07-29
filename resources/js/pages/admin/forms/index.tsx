@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { buttonClass } from '@/components/ui/button';
+import { SplitButton } from '@/components/ui/split-button';
 import {
     CardActions,
     CardList,
@@ -110,29 +111,27 @@ function PublicLinkActions({ slug }: { slug: string }) {
     );
 }
 
-/** Acciones por fila reutilizadas en la tabla (desktop) y en la tarjeta (mobile). */
+/**
+ * Acciones por fila, reutilizadas en la tabla (desktop) y en la tarjeta (mobile).
+ * Campañas es la operación del día a día, así que va como acción principal y el
+ * resto queda en el desplegable.
+ */
 function FormActions({ form }: { form: FormRow }) {
     return (
-        <>
-            <Link
-                href={`/admin/forms/${form.id}/edit`}
-                className="text-indigo hover:underline"
-            >
-                Editar
-            </Link>
-            <Link
-                href={`/admin/forms/${form.id}/campaigns`}
-                className="text-indigo hover:underline"
-            >
-                Campañas
-            </Link>
-            <Link
-                href={`/admin/forms/${form.id}/employees`}
-                className="text-indigo hover:underline"
-            >
-                Comparativo
-            </Link>
-        </>
+        <SplitButton
+            primary={{
+                label: 'Campañas',
+                href: `/admin/forms/${form.id}/campaigns`,
+            }}
+            actions={[
+                { label: 'Reporte', href: `/admin/forms/${form.id}/report` },
+                {
+                    label: 'Comparativo',
+                    href: `/admin/forms/${form.id}/employees`,
+                },
+                { label: 'Editar', href: `/admin/forms/${form.id}/edit` },
+            ]}
+        />
     );
 }
 

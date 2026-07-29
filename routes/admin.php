@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampaignBoardController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\EmployeeComparisonController;
 use App\Http\Controllers\Admin\FormController;
+use App\Http\Controllers\Admin\FormPickerController;
 use App\Http\Controllers\Admin\FormReportController;
 use App\Http\Controllers\Admin\ResultBoardController;
 use App\Http\Controllers\Admin\ResultController;
@@ -23,6 +24,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('campaigns', [CampaignBoardController::class, 'index'])->name('campaigns.index');
     Route::get('results', [ResultBoardController::class, 'index'])->name('results.index');
+    Route::get('reports', [FormPickerController::class, 'reports'])->name('reports.index');
+    Route::get('comparativo', [FormPickerController::class, 'comparisons'])->name('comparativo.index');
     Route::resource('users', UserController::class)->except('show');
 
     Route::get('forms/{form}/campaigns', [CampaignController::class, 'index'])->name('forms.campaigns.index');

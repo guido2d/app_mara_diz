@@ -10,7 +10,12 @@ export const adminNavItems: NavItem[] = [
     { label: 'Formularios', href: '/admin/forms', match: '/admin/forms' },
     { label: 'Campañas', href: '/admin/campaigns', match: '/admin/campaigns' },
     { label: 'Resultados', href: '/admin/results', match: '/admin/results' },
-    { label: 'Comparativo', href: '/admin/forms/1/employees', match: '/admin/forms/1/employees' },
+    { label: 'Reportes', href: '/admin/reports', match: '/admin/reports' },
+    {
+        label: 'Comparativo',
+        href: '/admin/comparativo',
+        match: '/admin/comparativo',
+    },
 ];
 
 /** Ítems agrupados en el dropdown de cuenta. */
