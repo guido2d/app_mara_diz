@@ -1,12 +1,27 @@
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 import { CampaignLegend, GroupedBars } from '@/components/ui/bar-chart';
-import type { BarSeries } from '@/components/ui/bar-chart';
+import type { BarScale, BarSeries } from '@/components/ui/bar-chart';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
 import { AdminShell } from '@/layouts/admin-shell';
 
-const MAX_POINTS = 3;
+/** Qué mide el reporte de una evaluación, definido en el seeder. */
+type ReportMetric = 'average' | 'positive_rate';
+
+/** Tope de la escala de las barras: 3 puntos o 100%. */
+const MAX: Record<ReportMetric, number> = { average: 3, positive_rate: 100 };
+
+const SCALE: Record<ReportMetric, BarScale> = {
+    average: 'points',
+    positive_rate: 'percent',
+};
+
+const CAPTION: Record<ReportMetric, string> = {
+    average: 'promedio de puntos por pregunta',
+    positive_rate: '% de personas que puntúan positivamente',
+};
 
 interface CampaignInfo {
     id: number;
@@ -15,7 +30,7 @@ interface CampaignInfo {
 
 interface CampaignValue {
     campaign_id: number;
-    average: number | null;
+    value: number | null;
     answers: number;
 }
 
@@ -29,6 +44,7 @@ interface EvaluationBlock {
     id: number;
     name: string;
     lower_is_better: boolean;
+    metric: ReportMetric;
     totals: { campaign_id: number; average: number | null }[];
     questions: QuestionRow[];
 }
@@ -46,7 +62,7 @@ function toSeries(
     return values.map((value, index) => ({
         campaign_id: value.campaign_id,
         campaign_name: campaigns[index]?.name ?? '',
-        value: value.average,
+        value: value.value,
         answers: value.answers,
     }));
 }
@@ -76,74 +92,123 @@ function EvaluationReport({
     evaluation: EvaluationBlock;
     campaigns: CampaignInfo[];
 }) {
+    const [open, setOpen] = useState(false);
+    const panelId = `report-eval-${evaluation.id}`;
     const change = totalChange(evaluation.totals);
     const fell = change !== null && change < 0;
     const improved = change !== null && fell === evaluation.lower_is_better;
 
     return (
-        <GlassCard className="mb-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 className="text-sm font-semibold text-ink">
+        <GlassCard
+            className="mb-5 cursor-pointer"
+            onClick={() => setOpen((value) => !value)}
+        >
+            {/*
+                El toggle vive en la card entera: el click del botón — también el
+                que dispara Enter o Espacio — burbujea hasta acá. El botón sigue
+                existiendo para el foco y el rol accesible, sin handler propio.
+            */}
+            <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="flex w-full cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 text-left"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 shrink-0 self-center text-ink-50 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+                    aria-hidden="true"
+                >
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+                <h2 className="flex-1 text-sm font-semibold text-ink">
                     {evaluation.name}
                 </h2>
                 <p className="font-mono text-[11px] text-ink-50">
+                    {CAPTION[evaluation.metric]} ·{' '}
                     {evaluation.lower_is_better
-                        ? 'menos puntos es mejor'
-                        : 'más puntos es mejor'}
+                        ? 'menos es mejor'
+                        : 'más es mejor'}
                 </p>
-            </div>
+            </button>
 
-            <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
-                {evaluation.totals.map((total, index) => (
-                    <div key={total.campaign_id}>
-                        <p className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
-                            {campaigns[index]?.name}
-                        </p>
-                        <p className="mt-0.5 font-mono text-xl font-semibold text-ink">
-                            {total.average === null ? (
-                                <span className="text-ink-50">—</span>
-                            ) : (
-                                total.average.toFixed(1)
-                            )}
-                        </p>
+            {!open && (
+                <p className="mt-1 pl-7 font-mono text-[11px] text-ink-50">
+                    {evaluation.questions.length} preguntas
+                </p>
+            )}
+
+            {open && (
+                <div
+                    id={panelId}
+                    onClick={(event) => event.stopPropagation()}
+                    className="cursor-default"
+                >
+                    <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+                        {evaluation.totals.map((total, index) => (
+                            <div key={total.campaign_id}>
+                                <p className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase">
+                                    {campaigns[index]?.name}
+                                </p>
+                                <p className="mt-0.5 font-mono text-xl font-semibold text-ink">
+                                    {total.average === null ? (
+                                        <span className="text-ink-50">—</span>
+                                    ) : (
+                                        total.average.toFixed(1)
+                                    )}
+                                </p>
+                            </div>
+                        ))}
+                        {change !== null && (
+                            <p
+                                className={`font-mono text-sm font-semibold ${improved ? 'text-emerald-600' : 'text-rose-600'}`}
+                            >
+                                {change > 0 ? '▲' : '▼'}{' '}
+                                {Math.abs(change).toFixed(1)}%
+                                <span className="ml-1 font-sans text-[11px] font-normal text-ink-50">
+                                    puntaje total
+                                </span>
+                            </p>
+                        )}
                     </div>
-                ))}
-                {change !== null && (
-                    <p
-                        className={`font-mono text-sm font-semibold ${improved ? 'text-emerald-600' : 'text-rose-600'}`}
-                    >
-                        {change > 0 ? '▲' : '▼'} {Math.abs(change).toFixed(1)}%
-                        <span className="ml-1 font-sans text-[11px] font-normal text-ink-50">
-                            puntaje total
-                        </span>
-                    </p>
-                )}
-            </div>
 
-            <div className="mt-5 border-t border-[rgba(26,24,48,0.08)] pt-4">
-                <CampaignLegend campaigns={campaigns} />
-            </div>
+                    <div className="mt-5 border-t border-[rgba(26,24,48,0.08)] pt-4">
+                        <CampaignLegend campaigns={campaigns} />
+                    </div>
 
-            <ol className="mt-5 flex flex-col gap-6">
-                {evaluation.questions.map((question, index) => (
-                    <li key={question.id}>
-                        <p className="mb-2 text-sm text-ink">
-                            <span className="mr-2 font-mono text-xs text-ink-50">
-                                {index + 1}.
-                            </span>
-                            {question.label}
-                        </p>
-                        <GroupedBars
-                            series={toSeries(question.values, campaigns)}
-                            max={MAX_POINTS}
-                            lowerIsBetter={evaluation.lower_is_better}
-                            showScale={
-                                index === evaluation.questions.length - 1
-                            }
-                        />
-                    </li>
-                ))}
-            </ol>
+                    <ol className="mt-5 flex flex-col gap-6">
+                        {evaluation.questions.map((question, index) => (
+                            <li key={question.id}>
+                                <p className="mb-2 text-sm text-ink">
+                                    <span className="mr-2 font-mono text-xs text-ink-50">
+                                        {index + 1}.
+                                    </span>
+                                    {question.label}
+                                </p>
+                                <GroupedBars
+                                    series={toSeries(
+                                        question.values,
+                                        campaigns,
+                                    )}
+                                    max={MAX[evaluation.metric]}
+                                    scale={SCALE[evaluation.metric]}
+                                    lowerIsBetter={evaluation.lower_is_better}
+                                    showScale={
+                                        index ===
+                                        evaluation.questions.length - 1
+                                    }
+                                />
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            )}
         </GlassCard>
     );
 }

@@ -70,7 +70,13 @@ it('renders a form report without JavaScript errors', function () {
     visit("/admin/forms/{$form->id}/report")
         ->assertNoJavaScriptErrors()
         ->assertSee('Síntomas psíquicos')
-        ->assertSee('Tener preocupaciones persistentes.');
+        ->assertDontSee('Tener preocupaciones persistentes.')
+        // Clic fuera del título: toda la card abre el colapse.
+        ->click('12 preguntas')
+        ->assertSee('Tener preocupaciones persistentes.')
+        ->click('Síntomas psíquicos')
+        ->assertDontSee('Tener preocupaciones persistentes.')
+        ->assertNoJavaScriptErrors();
 });
 
 it('opens the mobile menu from the hamburger button', function () {

@@ -1,9 +1,29 @@
 export interface BarSeries {
     campaign_id: number;
     campaign_name: string;
-    /** Promedio de la campaña, o null si no hay respuestas para medir. */
+    /** Valor de la campaña, o null si no hay respuestas para medir. */
     value: number | null;
     answers: number;
+}
+
+/** Qué mide la barra: puntos promedio o porcentaje de respuestas positivas. */
+export type BarScale = 'points' | 'percent';
+
+function formatValue(value: number, scale: BarScale): string {
+    return scale === 'percent' ? `${Math.round(value)}%` : value.toFixed(1);
+}
+
+function describeValue(value: number, max: number, scale: BarScale): string {
+    return scale === 'percent'
+        ? `${Math.round(value)}% de respuestas positivas`
+        : `${value.toFixed(1)} puntos promedio sobre ${max}`;
+}
+
+/** Marcas del eje: 0..max de a 1 en puntos, de a 25 en porcentaje. */
+function ticksOf(max: number, scale: BarScale): number[] {
+    return scale === 'percent'
+        ? [0, 25, 50, 75, 100]
+        : Array.from({ length: max + 1 }, (_, tick) => tick);
 }
 
 /**
@@ -33,8 +53,16 @@ function deltaOf(series: BarSeries[], index: number): number | null {
     return current - previous;
 }
 
-function DeltaBadge({ delta, lowerIsBetter }: { delta: number; lowerIsBetter: boolean }) {
-    if (Math.abs(delta) < 0.05) {
+function DeltaBadge({
+    delta,
+    lowerIsBetter,
+    scale,
+}: {
+    delta: number;
+    lowerIsBetter: boolean;
+    scale: BarScale;
+}) {
+    if (Math.abs(delta) < (scale === 'percent' ? 0.5 : 0.05)) {
         return <span className="font-mono text-[11px] text-ink-50">sin cambio</span>;
     }
 
@@ -45,7 +73,7 @@ function DeltaBadge({ delta, lowerIsBetter }: { delta: number; lowerIsBetter: bo
         <span
             className={`font-mono text-[11px] font-medium ${improved ? 'text-emerald-600' : 'text-rose-600'}`}
         >
-            {fell ? '▼' : '▲'} {Math.abs(delta).toFixed(1)}
+            {fell ? '▼' : '▲'} {formatValue(Math.abs(delta), scale)}
         </span>
     );
 }
@@ -59,11 +87,13 @@ export function GroupedBars({
     series,
     max,
     lowerIsBetter,
+    scale = 'points',
     showScale = false,
 }: {
     series: BarSeries[];
     max: number;
     lowerIsBetter: boolean;
+    scale?: BarScale;
     showScale?: boolean;
 }) {
     return (
@@ -83,15 +113,15 @@ export function GroupedBars({
                                         backgroundColor: campaignTint(index, series.length),
                                     }}
                                     role="img"
-                                    aria-label={`${item.campaign_name}: ${item.value.toFixed(1)} puntos promedio sobre ${max}`}
+                                    aria-label={`${item.campaign_name}: ${describeValue(item.value, max, scale)}`}
                                 />
                             )}
                         </div>
-                        <span className="w-10 shrink-0 text-right font-mono text-xs font-semibold text-ink">
+                        <span className="w-12 shrink-0 text-right font-mono text-xs font-semibold text-ink">
                             {item.value === null ? (
                                 <span className="font-normal text-ink-50">—</span>
                             ) : (
-                                item.value.toFixed(1)
+                                formatValue(item.value, scale)
                             )}
                         </span>
                         <span className="w-20 shrink-0">
@@ -101,7 +131,11 @@ export function GroupedBars({
                                 </span>
                             ) : (
                                 delta !== null && (
-                                    <DeltaBadge delta={delta} lowerIsBetter={lowerIsBetter} />
+                                    <DeltaBadge
+                                        delta={delta}
+                                        lowerIsBetter={lowerIsBetter}
+                                        scale={scale}
+                                    />
                                 )
                             )}
                         </span>
@@ -112,11 +146,11 @@ export function GroupedBars({
             {showScale && (
                 <div className="mt-1 flex items-center gap-3">
                     <div className="flex flex-1 justify-between font-mono text-[10px] text-ink-50">
-                        {Array.from({ length: max + 1 }, (_, tick) => (
-                            <span key={tick}>{tick}</span>
+                        {ticksOf(max, scale).map((tick) => (
+                            <span key={tick}>{formatValue(tick, scale)}</span>
                         ))}
                     </div>
-                    <span className="w-10 shrink-0" />
+                    <span className="w-12 shrink-0" />
                     <span className="w-20 shrink-0" />
                 </div>
             )}

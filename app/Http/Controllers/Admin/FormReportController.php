@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ReportMetric;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Evaluation;
@@ -50,6 +51,7 @@ class FormReportController extends Controller
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,
                 'lower_is_better' => $evaluation->lowerIsBetter(),
+                'metric' => $evaluation->reportMetric()->value,
                 'totals' => $campaigns->map(fn (Campaign $campaign) => [
                     'campaign_id' => $campaign->id,
                     'average' => $totals->get("{$campaign->id}-{$evaluation->id}"),
@@ -57,12 +59,12 @@ class FormReportController extends Controller
                 'questions' => $evaluation->questions->map(fn (Question $question) => [
                     'id' => $question->id,
                     'label' => $question->label,
-                    'values' => $campaigns->map(function (Campaign $campaign) use ($averages, $question) {
+                    'values' => $campaigns->map(function (Campaign $campaign) use ($averages, $evaluation, $question) {
                         $row = $averages->get("{$campaign->id}-{$question->id}");
 
                         return [
                             'campaign_id' => $campaign->id,
-                            'average' => $row === null ? null : round((float) $row->average, 2),
+                            'value' => $row === null ? null : $this->questionValue($evaluation, $row),
                             'answers' => $row === null ? 0 : (int) $row->answers,
                         ];
                     })->values(),
@@ -72,8 +74,25 @@ class FormReportController extends Controller
     }
 
     /**
-     * Average points and answer count per campaign and question, keyed by
-     * "campaignId-questionId". One grouped query instead of one per cell.
+     * The number the report draws for one question and campaign, on the scale
+     * the evaluation asked for: average points, or the percentage of people who
+     * answered positively.
+     *
+     * @param  object{average: mixed, answers: mixed, positives: mixed}  $row
+     */
+    private function questionValue(Evaluation $evaluation, object $row): float
+    {
+        if ($evaluation->reportMetric() === ReportMetric::PositiveRate) {
+            return round((int) $row->positives * 100 / (int) $row->answers, 1);
+        }
+
+        return round((float) $row->average, 2);
+    }
+
+    /**
+     * Average points, answer count and positive answer count per campaign and
+     * question, keyed by "campaignId-questionId". One grouped query instead of
+     * one per cell.
      *
      * @param  Collection<int, int>  $campaignIds
      * @param  Collection<int, int>  $questionIds
@@ -96,6 +115,7 @@ class FormReportController extends Controller
                 'submission_answers.question_id',
                 DB::raw('AVG(submission_answers.option_points) as average'),
                 DB::raw('COUNT(*) as answers'),
+                DB::raw('SUM(CASE WHEN submission_answers.option_points > 0 THEN 1 ELSE 0 END) as positives'),
             ])
             ->get()
             ->keyBy(fn (object $row) => "{$row->campaign_id}-{$row->question_id}");

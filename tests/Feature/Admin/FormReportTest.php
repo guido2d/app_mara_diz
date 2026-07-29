@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\QuestionType;
+use App\Enums\ReportMetric;
 use App\Models\Campaign;
 use App\Models\Evaluation;
 use App\Models\Form;
@@ -83,11 +84,39 @@ it('averages the points of everyone who answered each campaign', function () {
     $this->get("/admin/forms/{$form->id}/report")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('evaluations.0.questions.0.values.0.average', 1.5)
+            ->where('evaluations.0.questions.0.values.0.value', 1.5)
             ->where('evaluations.0.questions.0.values.0.answers', 2)
-            ->where('evaluations.0.questions.0.values.1.average', 1)
+            ->where('evaluations.0.questions.0.values.1.value', 1)
             ->where('evaluations.0.questions.0.values.1.answers', 1)
         );
+});
+
+it('reports the percentage of positive answers when the evaluation asks for it', function () {
+    [$form, $evaluation, , $shown, $first, $second] = reportFixture();
+    $evaluation->update(['report_metric' => ReportMetric::PositiveRate]);
+
+    answerInCampaign($first, $shown, 1);
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($second, $shown, 1);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.metric', 'positive_rate')
+            ->where('evaluations.0.questions.0.values.0.value', 33.3)
+            ->where('evaluations.0.questions.0.values.0.answers', 3)
+            ->where('evaluations.0.questions.0.values.1.value', 100)
+        );
+});
+
+it('reports the average of the points by default', function () {
+    [$form, , , $shown, $first] = reportFixture();
+    answerInCampaign($first, $shown, 1);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.metric', 'average'));
 });
 
 it('reports a campaign with no submissions as null instead of zero', function () {
@@ -97,7 +126,7 @@ it('reports a campaign with no submissions as null instead of zero', function ()
     $this->get("/admin/forms/{$form->id}/report")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('evaluations.0.questions.0.values.1.average', null)
+            ->where('evaluations.0.questions.0.values.1.value', null)
             ->where('evaluations.0.questions.0.values.1.answers', 0)
         );
 });
@@ -110,7 +139,7 @@ it('reports a question nobody answered in a campaign as null', function () {
     $this->get("/admin/forms/{$form->id}/report")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('evaluations.0.questions.0.values.1.average', null)
+            ->where('evaluations.0.questions.0.values.1.value', null)
             ->where('evaluations.0.questions.0.values.1.answers', 0)
         );
 });
