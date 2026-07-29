@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampaignBoardController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\EmployeeComparisonController;
 use App\Http\Controllers\Admin\FormController;
+use App\Http\Controllers\Admin\FormReportController;
 use App\Http\Controllers\Admin\ResultBoardController;
 use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\UserController;
@@ -33,6 +34,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('submissions/{submission}', [ResultController::class, 'show'])->name('submissions.show');
     Route::patch('submissions/{submission}/email', [ResultController::class, 'updateEmail'])->name('submissions.update-email');
     Route::delete('submissions/{submission}', [ResultController::class, 'destroy'])->name('submissions.destroy');
+
+    Route::get('forms/{form}/report', [FormReportController::class, 'show'])->name('forms.report');
 
     Route::get('forms/{form}/employees', [EmployeeComparisonController::class, 'index'])->name('forms.employees.index');
     Route::get('forms/{form}/employees/compare', [EmployeeComparisonController::class, 'show'])->name('forms.employees.show');
