@@ -28,6 +28,10 @@ function reportFixture(): array
         'label' => 'Preocupaciones persistentes', 'type' => QuestionType::Radio, 'required' => true, 'position' => 2, 'report_position' => 1,
     ]);
 
+    foreach ([['Cada 15 días', 0], ['1 vez por semana', 1], ['Casi todos los días', 3]] as $position => [$label, $points]) {
+        $shown->options()->create(['label' => $label, 'points' => $points, 'position' => $position + 1]);
+    }
+
     $form = Form::factory()->create();
     $form->evaluations()->attach($evaluation, ['position' => 1]);
 
@@ -37,16 +41,29 @@ function reportFixture(): array
     return [$form, $evaluation, $hidden, $shown, $first, $second];
 }
 
-/** Record one person's answer to one question, plus the evaluation total. */
+/**
+ * Record one person's answer to one question, plus the evaluation total. The
+ * answer points at the question's own option — matched by label when one is
+ * given, by points otherwise — so the distribution can group by option.
+ */
 function answerInCampaign(Campaign $campaign, Question $question, int $points, ?int $total = null, ?string $label = null): Submission
 {
     $submission = Submission::factory()->for($campaign)->create();
+
+    $option = $question->options()
+        ->when(
+            $label !== null,
+            fn ($query) => $query->where('label', $label),
+            fn ($query) => $query->where('points', $points),
+        )
+        ->first();
 
     $submission->answers()->create([
         'question_id' => $question->id,
         'question_label' => $question->label,
         'question_type' => QuestionType::Radio,
-        'option_label' => $label ?? "Opción {$points}",
+        'question_option_id' => $option?->id,
+        'option_label' => $option?->label ?? $label ?? "Opción {$points}",
         'option_points' => $points,
     ]);
 
@@ -89,6 +106,120 @@ it('averages the points of everyone who answered each campaign', function () {
             ->where('evaluations.0.questions.0.values.1.value', 1)
             ->where('evaluations.0.questions.0.values.1.answers', 1)
         );
+});
+
+it('counts how many people picked each option in every campaign', function () {
+    [$form, , , $shown, $first, $second] = reportFixture();
+
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($first, $shown, 3);
+    answerInCampaign($second, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('evaluations.0.questions.0.distribution.options', 3)
+            ->where('evaluations.0.questions.0.distribution.options.0.label', 'Cada 15 días')
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.0.count', 2)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.0.percent', 67)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.1.count', 1)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.1.percent', 100)
+            ->where('evaluations.0.questions.0.distribution.options.2.label', 'Casi todos los días')
+            ->where('evaluations.0.questions.0.distribution.options.2.counts.0.count', 1)
+            ->where('evaluations.0.questions.0.distribution.options.2.counts.0.percent', 33)
+        );
+});
+
+it('lists the options in their own order, including the ones nobody picked', function () {
+    [$form, , , $shown, $first] = reportFixture();
+    answerInCampaign($first, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.1.label', '1 vez por semana')
+            ->where('evaluations.0.questions.0.distribution.options.1.counts.0.count', 0)
+            ->where('evaluations.0.questions.0.distribution.options.1.counts.0.percent', 0)
+        );
+});
+
+it('compares each option against the previous campaign in percentage points', function () {
+    [$form, , , $shown, $first, $second] = reportFixture();
+
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($first, $shown, 3);
+    answerInCampaign($second, $shown, 0);
+    answerInCampaign($second, $shown, 0);
+    answerInCampaign($second, $shown, 0);
+    answerInCampaign($second, $shown, 3);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.0.delta', null)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.1.delta', 25)
+            ->where('evaluations.0.questions.0.distribution.options.2.counts.1.delta', -25)
+        );
+});
+
+it('leaves the difference empty when a campaign has nobody to compare against', function () {
+    [$form, , , $shown, $first, $second] = reportFixture();
+    answerInCampaign($second, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.0.percent', null)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.0.count', 0)
+            ->where('evaluations.0.questions.0.distribution.options.0.counts.1.delta', null)
+        );
+});
+
+it('reports how many people answered each question in every campaign', function () {
+    [$form, , , $shown, $first, $second] = reportFixture();
+
+    answerInCampaign($first, $shown, 0);
+    answerInCampaign($first, $shown, 1);
+    answerInCampaign($second, $shown, 3);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.answers.0.total', 2)
+            ->where('evaluations.0.questions.0.distribution.answers.1.total', 1)
+        );
+});
+
+it('marks growing on a zero point option as good when less is better, and the opposite otherwise', function () {
+    [$form, $evaluation, , $shown, $first] = reportFixture();
+    answerInCampaign($first, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.growth_is_good', true)
+            ->where('evaluations.0.questions.0.distribution.options.1.growth_is_good', false)
+            ->where('evaluations.0.questions.0.distribution.options.2.growth_is_good', false)
+        );
+
+    $evaluation->update(['lower_is_better' => false]);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.growth_is_good', false)
+            ->where('evaluations.0.questions.0.distribution.options.2.growth_is_good', true)
+        );
+});
+
+it('does not break down the options of evaluations reported as a percentage', function () {
+    [$form, $evaluation, , $shown, $first] = reportFixture();
+    $evaluation->update(['report_metric' => ReportMetric::PositiveRate]);
+    answerInCampaign($first, $shown, 1);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('evaluations.0.questions.0.distribution', null));
 });
 
 it('reports the percentage of positive answers when the evaluation asks for it', function () {

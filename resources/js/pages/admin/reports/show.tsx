@@ -2,6 +2,12 @@ import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { CampaignLegend, GroupedBars } from '@/components/ui/bar-chart';
 import type { BarScale, BarSeries } from '@/components/ui/bar-chart';
+import {
+    DISTRIBUTION_MIN_WIDTH,
+    DistributionHeader,
+    OptionDistribution,
+} from '@/components/ui/option-distribution';
+import type { Distribution } from '@/components/ui/option-distribution';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { buttonClass } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/card';
@@ -29,6 +35,9 @@ const CAPTION: Record<ReportMetric, string> = {
     yes_rate: '% de personas con el síntoma o enfermedad',
 };
 
+/** Leyenda de las evaluaciones que se desglosan respuesta por respuesta. */
+const DISTRIBUTION_CAPTION = 'cantidad de personas por respuesta';
+
 interface CampaignInfo {
     id: number;
     name: string;
@@ -44,6 +53,8 @@ interface QuestionRow {
     id: number;
     label: string;
     values: CampaignValue[];
+    /** Desglose por opción, o null en las evaluaciones que se informan como %. */
+    distribution: Distribution | null;
 }
 
 interface EvaluationBlock {
@@ -104,6 +115,9 @@ function EvaluationReport({
     const change = totalChange(evaluation.totals);
     const fell = change !== null && change < 0;
     const improved = change !== null && fell === evaluation.lower_is_better;
+    const breaksDown = evaluation.questions.some(
+        (question) => question.distribution !== null,
+    );
 
     return (
         <GlassCard
@@ -138,7 +152,10 @@ function EvaluationReport({
                     {evaluation.name}
                 </h2>
                 <p className="font-mono text-[11px] text-ink-50">
-                    {CAPTION[evaluation.metric]} ·{' '}
+                    {breaksDown
+                        ? DISTRIBUTION_CAPTION
+                        : CAPTION[evaluation.metric]}{' '}
+                    ·{' '}
                     {evaluation.lower_is_better
                         ? 'menos es mejor'
                         : 'más es mejor'}
@@ -194,35 +211,75 @@ function EvaluationReport({
                         </div>
                     )}
 
-                    <div className="mt-5 border-t border-[rgba(26,24,48,0.08)] pt-4">
-                        <CampaignLegend campaigns={campaigns} />
-                    </div>
+                    {/*
+                        El desglose por opción trae su propio encabezado de
+                        columnas — con el nombre y el color de cada campaña — así
+                        que la leyenda sólo hace falta en los gráficos de barras.
+                    */}
+                    {!breaksDown && (
+                        <div className="mt-5 border-t border-[rgba(26,24,48,0.08)] pt-4">
+                            <CampaignLegend campaigns={campaigns} />
+                        </div>
+                    )}
 
-                    <ol className="mt-5 flex flex-col gap-6">
-                        {evaluation.questions.map((question, index) => (
-                            <li key={question.id}>
-                                <p className="mb-2 text-sm text-ink">
-                                    <span className="mr-2 font-mono text-xs text-ink-50">
-                                        {index + 1}.
-                                    </span>
-                                    {question.label}
-                                </p>
-                                <GroupedBars
-                                    series={toSeries(
-                                        question.values,
-                                        campaigns,
-                                    )}
-                                    max={MAX[evaluation.metric]}
-                                    scale={SCALE[evaluation.metric]}
-                                    lowerIsBetter={evaluation.lower_is_better}
-                                    showScale={
-                                        index ===
-                                        evaluation.questions.length - 1
-                                    }
-                                />
-                            </li>
-                        ))}
-                    </ol>
+                    {/*
+                        Un único contenedor con scroll horizontal para toda la
+                        evaluación: si cada pregunta tuviera el suyo, en pantallas
+                        angostas las tablas se desplazarían por separado y
+                        dejarían de estar alineadas con el encabezado.
+                    */}
+                    <div className="mt-5 overflow-x-auto border-t border-[rgba(26,24,48,0.08)] pt-4">
+                        <div
+                            style={
+                                breaksDown
+                                    ? { minWidth: DISTRIBUTION_MIN_WIDTH }
+                                    : undefined
+                            }
+                        >
+                            {breaksDown && (
+                                <DistributionHeader campaigns={campaigns} />
+                            )}
+
+                            <ol className="mt-4 flex flex-col gap-6">
+                                {evaluation.questions.map((question, index) => (
+                                    <li key={question.id}>
+                                        <p className="mb-2 text-sm text-ink">
+                                            <span className="mr-2 font-mono text-xs text-ink-50">
+                                                {index + 1}.
+                                            </span>
+                                            {question.label}
+                                        </p>
+                                        {question.distribution === null ? (
+                                            <GroupedBars
+                                                series={toSeries(
+                                                    question.values,
+                                                    campaigns,
+                                                )}
+                                                max={MAX[evaluation.metric]}
+                                                scale={SCALE[evaluation.metric]}
+                                                lowerIsBetter={
+                                                    evaluation.lower_is_better
+                                                }
+                                                showScale={
+                                                    index ===
+                                                    evaluation.questions
+                                                        .length -
+                                                        1
+                                                }
+                                            />
+                                        ) : (
+                                            <OptionDistribution
+                                                distribution={
+                                                    question.distribution
+                                                }
+                                                campaigns={campaigns}
+                                            />
+                                        )}
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             )}
         </GlassCard>

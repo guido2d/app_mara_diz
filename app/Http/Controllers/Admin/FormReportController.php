@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Evaluation;
 use App\Models\Form;
 use App\Models\Question;
+use App\Models\QuestionOption;
 use App\Models\SubmissionAnswer;
 use App\Models\SubmissionResult;
 use Illuminate\Support\Collection;
@@ -35,7 +36,7 @@ class FormReportController extends Controller
         $campaignIds = $campaigns->pluck('id');
 
         $evaluations = $form->evaluations()
-            ->with(['questions' => fn ($query) => $query->inReport()])
+            ->with(['questions' => fn ($query) => $query->inReport()->with('options')])
             ->get()
             ->filter(fn (Evaluation $evaluation) => $evaluation->questions->isNotEmpty())
             ->values();
@@ -43,6 +44,7 @@ class FormReportController extends Controller
         $questionIds = $evaluations->flatMap(fn (Evaluation $evaluation) => $evaluation->questions->pluck('id'));
 
         $averages = $this->questionAverages($campaignIds, $questionIds);
+        $optionCounts = $this->optionCounts($campaignIds, $this->brokenDownQuestionIds($evaluations));
         $totals = $this->evaluationTotals($campaignIds);
 
         return Inertia::render('admin/reports/show', [
@@ -67,6 +69,7 @@ class FormReportController extends Controller
                 'questions' => $evaluation->questions->map(fn (Question $question) => [
                     'id' => $question->id,
                     'label' => $question->label,
+                    'distribution' => $this->distributionOf($evaluation, $question, $campaigns, $optionCounts),
                     'values' => $campaigns->map(function (Campaign $campaign) use ($averages, $evaluation, $question) {
                         $row = $averages->get("{$campaign->id}-{$question->id}");
 
@@ -95,6 +98,127 @@ class FormReportController extends Controller
             ReportMetric::YesRate => round((int) $row->affirmatives * 100 / (int) $row->answers, 1),
             ReportMetric::Average => round((float) $row->average, 2),
         };
+    }
+
+    /**
+     * The questions whose answers are broken down option by option. Only the
+     * evaluations reported as an average get the breakdown: the ones reported
+     * as a rate already answer "how many people" by construction, and adding a
+     * Sí/No table under every question would only repeat the same number.
+     *
+     * @param  Collection<int, Evaluation>  $evaluations
+     * @return Collection<int, int>
+     */
+    private function brokenDownQuestionIds(Collection $evaluations): Collection
+    {
+        return $evaluations
+            ->filter(fn (Evaluation $evaluation) => $evaluation->reportMetric() === ReportMetric::Average)
+            ->flatMap(fn (Evaluation $evaluation) => $evaluation->questions->pluck('id'));
+    }
+
+    /**
+     * How many people picked each option of a question in every campaign, plus
+     * how that share moved against the previous campaign. Returns null for the
+     * questions that are not broken down.
+     *
+     * @param  Collection<int, Campaign>  $campaigns
+     * @param  array<string, int>  $counts
+     * @return array{options: array<int, array<string, mixed>>, answers: array<int, array<string, int>>}|null
+     */
+    private function distributionOf(Evaluation $evaluation, Question $question, Collection $campaigns, array $counts): ?array
+    {
+        if ($evaluation->reportMetric() !== ReportMetric::Average || $question->options->isEmpty()) {
+            return null;
+        }
+
+        /**
+         * The denominator is how many people answered this question in this
+         * campaign, not how many took the campaign: somebody who skipped it must
+         * not land in the most benign option by omission.
+         */
+        $answered = $campaigns->mapWithKeys(fn (Campaign $campaign) => [
+            $campaign->id => $question->options->sum(
+                fn (QuestionOption $option) => $counts["{$campaign->id}-{$option->id}"] ?? 0,
+            ),
+        ])->all();
+
+        return [
+            'options' => $question->options->map(function (QuestionOption $option) use ($campaigns, $counts, $answered, $evaluation) {
+                /**
+                 * Whole percentages, and the difference taken between them: with
+                 * decimals the report would print "29%" next to "30%" and call
+                 * the gap "0 pp", because the two roundings disagree.
+                 */
+                $shares = $campaigns->map(fn (Campaign $campaign) => $answered[$campaign->id] === 0
+                    ? null
+                    : (int) round(($counts["{$campaign->id}-{$option->id}"] ?? 0) * 100 / $answered[$campaign->id]),
+                )->values()->all();
+
+                return [
+                    'id' => $option->id,
+                    'label' => $option->label,
+                    'growth_is_good' => $this->growthIsGood($evaluation, $option),
+                    'counts' => $campaigns->values()->map(fn (Campaign $campaign, int $index) => [
+                        'campaign_id' => $campaign->id,
+                        'count' => $counts["{$campaign->id}-{$option->id}"] ?? 0,
+                        'percent' => $shares[$index],
+                        'delta' => $index === 0 || $shares[$index] === null || $shares[$index - 1] === null
+                            ? null
+                            : $shares[$index] - $shares[$index - 1],
+                    ])->values()->all(),
+                ];
+            })->values()->all(),
+            'answers' => $campaigns->map(fn (Campaign $campaign) => [
+                'campaign_id' => $campaign->id,
+                'total' => $answered[$campaign->id],
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Whether more people choosing this option is an improvement. The direction
+     * belongs to the option, not to the evaluation: in "Síntomas psíquicos"
+     * fewer points is better, so the report greens a rise in "Cada 15 días" —
+     * worth zero points — and reddens a rise in "Casi todos los días".
+     */
+    private function growthIsGood(Evaluation $evaluation, QuestionOption $option): bool
+    {
+        return $evaluation->lowerIsBetter()
+            ? $option->points === 0
+            : $option->points > 0;
+    }
+
+    /**
+     * How many people picked each option, keyed by "campaignId-optionId". One
+     * grouped query for the whole report.
+     *
+     * @param  Collection<int, int>  $campaignIds
+     * @param  Collection<int, int>  $questionIds
+     * @return array<string, int>
+     */
+    private function optionCounts(Collection $campaignIds, Collection $questionIds): array
+    {
+        if ($campaignIds->isEmpty() || $questionIds->isEmpty()) {
+            return [];
+        }
+
+        return SubmissionAnswer::query()
+            ->join('submissions', 'submissions.id', '=', 'submission_answers.submission_id')
+            ->whereIn('submissions.campaign_id', $campaignIds)
+            ->whereIn('submission_answers.question_id', $questionIds)
+            ->whereNotNull('submission_answers.question_option_id')
+            ->groupBy('submissions.campaign_id', 'submission_answers.question_option_id')
+            ->select([
+                'submissions.campaign_id',
+                'submission_answers.question_option_id',
+                DB::raw('COUNT(*) as answers'),
+            ])
+            ->toBase()
+            ->get()
+            ->mapWithKeys(fn (object $row) => [
+                "{$row->campaign_id}-{$row->question_option_id}" => (int) $row->answers,
+            ])
+            ->all();
     }
 
     /**
