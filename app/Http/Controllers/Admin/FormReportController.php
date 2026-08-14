@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\ReportMetric;
+use App\Enums\SignalTone;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Evaluation;
@@ -142,8 +143,10 @@ class FormReportController extends Controller
             ),
         ])->all();
 
+        $tones = $this->tonesOf($evaluation, $question->options);
+
         return [
-            'options' => $question->options->map(function (QuestionOption $option) use ($campaigns, $counts, $answered, $evaluation) {
+            'options' => $question->options->map(function (QuestionOption $option) use ($campaigns, $counts, $answered, $evaluation, $tones) {
                 /**
                  * Whole percentages, and the difference taken between them: with
                  * decimals the report would print "29%" next to "30%" and call
@@ -158,6 +161,7 @@ class FormReportController extends Controller
                     'id' => $option->id,
                     'label' => $option->label,
                     'growth_is_good' => $this->growthIsGood($evaluation, $option),
+                    'tone' => $tones[$option->points]->value,
                     'counts' => $campaigns->values()->map(fn (Campaign $campaign, int $index) => [
                         'campaign_id' => $campaign->id,
                         'count' => $counts["{$campaign->id}-{$option->id}"] ?? 0,
@@ -173,6 +177,40 @@ class FormReportController extends Controller
                 'total' => $answered[$campaign->id],
             ])->values()->all(),
         ];
+    }
+
+    /**
+     * The traffic light of every score of a question, keyed by points: green for
+     * the most benign option, red for the worst, amber in between. The order
+     * comes from the points and the direction of the evaluation, so a question
+     * where more points are better greens the top of the scale, not the bottom.
+     *
+     * @param  Collection<int, QuestionOption>  $options
+     * @return array<int, SignalTone>
+     */
+    private function tonesOf(Evaluation $evaluation, Collection $options): array
+    {
+        $ranked = $options->pluck('points')->unique()->sort()->values();
+
+        if (! $evaluation->lowerIsBetter()) {
+            $ranked = $ranked->reverse()->values();
+        }
+
+        $worst = $ranked->count() - 1;
+
+        /**
+         * A question whose options all score the same has no scale to paint —
+         * every answer gets the neutral amber instead of a green that would
+         * suggest they are all the best possible one.
+         */
+        return $ranked->mapWithKeys(fn (int $points, int $rank) => [
+            $points => match (true) {
+                $worst === 0 => SignalTone::Warning,
+                $rank === 0 => SignalTone::Good,
+                $rank === $worst => SignalTone::Bad,
+                default => SignalTone::Warning,
+            },
+        ])->all();
     }
 
     /**

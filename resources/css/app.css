@@ -20,6 +20,11 @@
     --color-indigo-ink: #f4f2fb;
     --color-danger: #991b1b;
 
+    /* Semáforo del reporte: de la respuesta más benigna a la más severa */
+    --color-signal-good: #2f7d5d;
+    --color-signal-warning: #c08a1e;
+    --color-signal-bad: #a33232;
+
     --radius-glass: 22px;
 }
 

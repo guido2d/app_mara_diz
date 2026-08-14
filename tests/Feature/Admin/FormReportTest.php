@@ -212,6 +212,41 @@ it('marks growing on a zero point option as good when less is better, and the op
         );
 });
 
+it('paints the options as a traffic light, from the most benign answer to the worst', function () {
+    [$form, $evaluation, , $shown, $first] = reportFixture();
+    answerInCampaign($first, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.tone', 'good')
+            ->where('evaluations.0.questions.0.distribution.options.1.tone', 'warning')
+            ->where('evaluations.0.questions.0.distribution.options.2.tone', 'bad')
+        );
+
+    $evaluation->update(['lower_is_better' => false]);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.tone', 'bad')
+            ->where('evaluations.0.questions.0.distribution.options.1.tone', 'warning')
+            ->where('evaluations.0.questions.0.distribution.options.2.tone', 'good')
+        );
+});
+
+it('paints every option amber when none of them scores differently', function () {
+    [$form, , , $shown, $first] = reportFixture();
+    $shown->options()->update(['points' => 0]);
+    answerInCampaign($first, $shown, 0);
+
+    $this->get("/admin/forms/{$form->id}/report")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('evaluations.0.questions.0.distribution.options.0.tone', 'warning')
+            ->where('evaluations.0.questions.0.distribution.options.2.tone', 'warning')
+        );
+});
+
 it('does not break down the options of evaluations reported as a percentage', function () {
     [$form, $evaluation, , $shown, $first] = reportFixture();
     $evaluation->update(['report_metric' => ReportMetric::PositiveRate]);

@@ -1,4 +1,11 @@
-import { campaignTint } from '@/components/ui/bar-chart';
+/** Semáforo de una opción: verde la respuesta más benigna, rojo la más severa. */
+export type SignalTone = 'good' | 'warning' | 'bad';
+
+const TONE_COLOR: Record<SignalTone, string> = {
+    good: 'var(--color-signal-good)',
+    warning: 'var(--color-signal-warning)',
+    bad: 'var(--color-signal-bad)',
+};
 
 export interface DistributionCount {
     campaign_id: number;
@@ -15,6 +22,8 @@ export interface DistributionOption {
     label: string;
     /** Si que esta opción crezca es una mejora — lo define el puntaje de la opción. */
     growth_is_good: boolean;
+    /** Color de la barra según qué tan severa es la respuesta. */
+    tone: SignalTone;
     counts: DistributionCount[];
 }
 
@@ -34,11 +43,11 @@ interface CampaignInfo {
  * quedar alineadas aunque vivan en bloques distintos.
  */
 function columnsOf(campaigns: number): string {
-    return `minmax(7rem, 1.2fr) repeat(${campaigns}, minmax(9rem, 1fr)) 5rem`;
+    return `minmax(7rem, 1.2fr) repeat(${campaigns}, minmax(10rem, 1fr)) 5rem`;
 }
 
 /** Ancho mínimo antes de que la tabla empiece a scrollear en horizontal. */
-const MIN_WIDTH = '38rem';
+const MIN_WIDTH = '41rem';
 
 /**
  * Cuánto se movió una opción entre campañas. El número es la resta entre ambos
@@ -68,38 +77,44 @@ function DeltaBadge({
     );
 }
 
-/** Celda de una campaña: la barra proporcional más la cantidad y su porcentaje. */
+/**
+ * Celda de una campaña: la barra proporcional más el porcentaje y la cantidad
+ * de personas detrás. El color de la barra es el semáforo de la opción y es el
+ * mismo en todas las campañas: así una toma se compara contra la otra por el
+ * largo de la barra, sin que un cambio de intensidad sugiera otra diferencia.
+ */
 function CountCell({
     count,
     percent,
-    index,
-    campaigns,
+    tone,
 }: {
     count: number;
     percent: number | null;
-    index: number;
-    campaigns: number;
+    tone: SignalTone;
 }) {
     return (
         <div className="flex items-center gap-2">
             <div className="h-4 flex-1 overflow-hidden rounded bg-ink/6">
                 {percent !== null && (
                     <div
+                        data-tone={tone}
                         className="h-full rounded transition-[width] duration-500"
                         style={{
                             width: `${percent}%`,
-                            backgroundColor: campaignTint(index, campaigns),
+                            backgroundColor: TONE_COLOR[tone],
                         }}
                     />
                 )}
             </div>
-            <span className="w-[4.5rem] shrink-0 text-right font-mono text-xs whitespace-nowrap text-ink">
+            <span className="w-[5.5rem] shrink-0 text-right font-mono text-xs whitespace-nowrap text-ink">
                 {percent === null ? (
                     <span className="text-ink-50">—</span>
                 ) : (
                     <>
-                        <span className="font-semibold">{count}</span>
-                        <span className="ml-1 text-ink-50">({percent}%)</span>
+                        <span className="font-semibold">{percent}%</span>
+                        <span className="ml-1 text-ink-50">
+                            ({count} per.)
+                        </span>
                     </>
                 )}
             </span>
@@ -109,7 +124,9 @@ function CountCell({
 
 /**
  * Encabezado de columnas de la tabla de distribución. Va una sola vez arriba de
- * todas las preguntas de la evaluación en lugar de repetirse en cada una.
+ * todas las preguntas de la evaluación en lugar de repetirse en cada una. Sin
+ * muestra de color: acá las barras se distinguen por el semáforo de la opción,
+ * no por la campaña, y un punto de color sólo confundiría las dos lecturas.
  */
 export function DistributionHeader({ campaigns }: { campaigns: CampaignInfo[] }) {
     return (
@@ -118,20 +135,11 @@ export function DistributionHeader({ campaigns }: { campaigns: CampaignInfo[] })
             style={{ gridTemplateColumns: columnsOf(campaigns.length) }}
         >
             <span />
-            {campaigns.map((campaign, index) => (
+            {campaigns.map((campaign) => (
                 <span
                     key={campaign.id}
-                    className="flex items-center gap-2 font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase"
+                    className="font-mono text-[11px] tracking-[0.06em] text-ink-50 uppercase"
                 >
-                    <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{
-                            backgroundColor: campaignTint(
-                                index,
-                                campaigns.length,
-                            ),
-                        }}
-                    />
                     {campaign.name}
                 </span>
             ))}
@@ -176,8 +184,7 @@ export function OptionDistribution({
                                 key={count.campaign_id}
                                 count={count.count}
                                 percent={count.percent}
-                                index={index}
-                                campaigns={campaigns.length}
+                                tone={option.tone}
                             />
                         ))}
                         <span className="text-right">
