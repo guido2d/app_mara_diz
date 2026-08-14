@@ -9,6 +9,11 @@ interface EvaluationOption {
     name: string;
 }
 
+/** Texto que se precarga en la descripción de todo formulario nuevo. */
+const DEFAULT_DESCRIPTION = `A continuación encontrará cinco evaluaciones que le ayudarán a identificar algunos síntomas que pueden ser consecuencia del estrés sostenido. Sea franco/a en sus respuestas. Este registro será revisado exclusivamente por mí guardando **absoluta confidencialidad**. La empresa solo recibirá un informe general con la cantidad de síntomas promedio por persona sin ningún tipo de individualización.  **Solo si usted lo autoriza al final de la hoja este registro podrá ser leído por el Servicio de Salud**.
+
+Pasado un tiempo de terminado el programa le volveré a enviar las 4 primeras tablas para evaluar los cambios que se hayan producido y acordaremos un encuentro virtual para hacerle sugerencias con el objetivo de seguir introduciendo cambios saludables en su vida.`;
+
 export default function FormCreate({
     evaluations,
 }: {
@@ -40,7 +45,8 @@ export default function FormCreate({
                                     <Textarea
                                         id="description"
                                         name="description"
-                                        rows={6}
+                                        rows={10}
+                                        defaultValue={DEFAULT_DESCRIPTION}
                                     />
                                     <p className="text-xs text-ink-50">
                                         Usá{' '}
@@ -64,6 +70,7 @@ export default function FormCreate({
                                                 type="checkbox"
                                                 name="evaluation_ids[]"
                                                 value={e.id}
+                                                defaultChecked
                                                 className="size-4 accent-indigo"
                                             />
                                             {e.name}
