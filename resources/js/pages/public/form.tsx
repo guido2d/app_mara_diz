@@ -29,6 +29,7 @@ interface Props {
     form: { name: string; slug: string; description: string | null };
     campaign: { id: number; name: string };
     evaluations: Evaluation[];
+    isFollowUp: boolean;
 }
 
 type ProfileKey =
@@ -73,7 +74,7 @@ interface FormData {
     answers: Record<number, string>;
 }
 
-export default function PublicForm({ form, campaign, evaluations }: Props) {
+export default function PublicForm({ form, campaign, evaluations, isFollowUp }: Props) {
     const { data, setData, post, processing, errors } = useForm<FormData>({
         first_name: '',
         last_name: '',
@@ -171,6 +172,7 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
                             <RichText text={form.description} />
                         </p>
                     )}
+                    {isFollowUp && <SameEmailNotice className="mt-6" />}
                     <Button type="button" onClick={() => setStarted(true)} className="mt-8">
                         Comenzar →
                     </Button>
@@ -262,6 +264,11 @@ export default function PublicForm({ form, campaign, evaluations }: Props) {
                                 </Field>
                                 <Field label="Email laboral" invalid={attempted && isBlank(data.work_email)}>
                                     <Input type="email" value={data.work_email} onChange={(e) => setData('work_email', e.target.value)} />
+                                    {isFollowUp && (
+                                        <p className="mt-0.5 text-[0.8125rem] leading-snug font-medium text-indigo">
+                                            Tiene que ser el mismo que usaste en la evaluación anterior.
+                                        </p>
+                                    )}
                                 </Field>
                                 <Field label="Celular" invalid={attempted && isBlank(data.phone)}>
                                     <Input value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
@@ -417,6 +424,21 @@ function QuestionField({ question, value, invalid, onChange }: { question: Quest
             onChange={(e) => onChange(e.target.value)}
             className={cn(invalid && 'field-invalid')}
         />
+    );
+}
+
+/** Shown only on follow-up campaigns: answers are matched across rounds by work email. */
+function SameEmailNotice({ className }: { className?: string }) {
+    return (
+        <div className={cn('flex gap-3 rounded-xl border border-indigo/25 bg-indigo/8 px-4 py-3.5', className)}>
+            <span aria-hidden="true" className="mt-px text-base leading-none text-indigo">
+                ⚠
+            </span>
+            <p className="text-sm leading-relaxed text-ink">
+                <span className="font-semibold">Importante:</span> ingresá el <span className="font-semibold">mismo email laboral</span> que usaste en la
+                evaluación anterior. Es lo que nos permite comparar tus resultados.
+            </p>
+        </div>
     );
 }
 

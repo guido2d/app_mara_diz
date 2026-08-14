@@ -24,9 +24,16 @@ class PublicFormController extends Controller
 
         $campaign->load('evaluations.questions.options');
 
+        // A follow-up round must be answered with the same work email as the
+        // earlier one, otherwise the two submissions cannot be compared.
+        $isFollowUp = $form->campaigns()
+            ->where('starts_at', '<', $campaign->starts_at)
+            ->exists();
+
         return Inertia::render('public/form', [
             'form' => ['name' => $form->name, 'slug' => $form->slug, 'description' => $form->description],
             'campaign' => ['id' => $campaign->id, 'name' => $campaign->name],
+            'isFollowUp' => $isFollowUp,
             'evaluations' => $campaign->evaluations->map(fn ($evaluation) => [
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,

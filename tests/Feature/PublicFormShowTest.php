@@ -39,6 +39,42 @@ it('shows only the evaluations picked for the open campaign', function () {
             ->where('evaluations.0.name', 'Incluida'));
 });
 
+it('does not flag a follow-up when the open campaign is the first one', function () {
+    $form = Form::factory()->create();
+    Campaign::factory()->open()->for($form)->create();
+
+    $this->get("/f/{$form->slug}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('isFollowUp', false));
+});
+
+it('flags a follow-up when the form already had an earlier campaign', function () {
+    $form = Form::factory()->create();
+    Campaign::factory()->closed()->for($form)->create([
+        'starts_at' => now()->subMonths(6)->toDateString(),
+        'ends_at' => now()->subMonths(5)->toDateString(),
+    ]);
+    Campaign::factory()->open()->for($form)->create();
+
+    $this->get("/f/{$form->slug}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('isFollowUp', true));
+});
+
+it('does not flag a follow-up for earlier campaigns of a different form', function () {
+    Campaign::factory()->closed()->create([
+        'starts_at' => now()->subMonths(6)->toDateString(),
+        'ends_at' => now()->subMonths(5)->toDateString(),
+    ]);
+
+    $form = Form::factory()->create();
+    Campaign::factory()->open()->for($form)->create();
+
+    $this->get("/f/{$form->slug}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('isFollowUp', false));
+});
+
 it('shows unavailable when there is no open campaign', function () {
     $form = Form::factory()->create();
     Campaign::factory()->closed()->for($form)->create();
