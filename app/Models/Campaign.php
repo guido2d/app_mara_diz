@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
@@ -38,6 +39,20 @@ class Campaign extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
+    }
+
+    /**
+     * Evaluations answered in this round. A campaign picks a subset of its
+     * form's evaluations, so two rounds of the same form can differ.
+     *
+     * @return BelongsToMany<Evaluation, $this>
+     */
+    public function evaluations(): BelongsToMany
+    {
+        return $this->belongsToMany(Evaluation::class)
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 
     public function isOpen(): bool

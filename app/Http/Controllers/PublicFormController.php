@@ -22,12 +22,12 @@ class PublicFormController extends Controller
             ]);
         }
 
-        $form->load('evaluations.questions.options');
+        $campaign->load('evaluations.questions.options');
 
         return Inertia::render('public/form', [
             'form' => ['name' => $form->name, 'slug' => $form->slug, 'description' => $form->description],
             'campaign' => ['id' => $campaign->id, 'name' => $campaign->name],
-            'evaluations' => $form->evaluations->map(fn ($evaluation) => [
+            'evaluations' => $campaign->evaluations->map(fn ($evaluation) => [
                 'id' => $evaluation->id,
                 'name' => $evaluation->name,
                 'description' => $evaluation->description,
@@ -47,7 +47,7 @@ class PublicFormController extends Controller
         $campaign = $form->openCampaign();
         abort_if($campaign === null, 404);
 
-        $form->load('evaluations.questions.options');
+        $campaign->load('evaluations.questions.options');
         $campaign->setRelation('form', $form);
 
         // Bind campaign so StoreSubmissionRequest can validate answers against it.
@@ -58,7 +58,7 @@ class PublicFormController extends Controller
             return back()->withErrors(['work_email' => 'Ya respondiste este formulario.'])->withInput();
         }
 
-        $submission = DB::transaction(function () use ($campaign, $form, $data) {
+        $submission = DB::transaction(function () use ($campaign, $data) {
             $submission = $campaign->submissions()->create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
@@ -75,7 +75,7 @@ class PublicFormController extends Controller
             ]);
 
             $answers = (array) ($data['answers'] ?? []);
-            foreach ($form->evaluations->flatMap->questions as $question) {
+            foreach ($campaign->evaluations->flatMap->questions as $question) {
                 $value = $answers[$question->id] ?? null;
                 if ($value === null || $value === '') {
                     continue;

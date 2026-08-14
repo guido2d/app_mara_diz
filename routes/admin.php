@@ -32,6 +32,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('forms/{form}/campaigns', [CampaignController::class, 'store'])->name('forms.campaigns.store');
     Route::post('campaigns/{campaign}/close', [CampaignController::class, 'close'])->name('campaigns.close');
     Route::post('campaigns/{campaign}/reopen', [CampaignController::class, 'reopen'])->name('campaigns.reopen');
+    Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 
     Route::get('campaigns/{campaign}/results', [ResultController::class, 'index'])->name('campaigns.results');
     Route::get('submissions/{submission}', [ResultController::class, 'show'])->name('submissions.show');

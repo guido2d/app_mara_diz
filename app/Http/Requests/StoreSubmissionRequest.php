@@ -50,7 +50,7 @@ class StoreSubmissionRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             /** @var Campaign $campaign */
             $campaign = $this->route('campaign');
-            $questions = $campaign->form->evaluations->flatMap->questions;
+            $questions = $campaign->evaluations->flatMap->questions;
             $answers = (array) $this->input('answers', []);
 
             foreach ($questions as $question) {

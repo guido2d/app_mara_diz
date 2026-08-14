@@ -8,17 +8,17 @@ use App\Models\Submission;
 class ScoringService
 {
     /**
-     * Store one total-points snapshot per scored evaluation of the submission's form.
+     * Store one total-points snapshot per scored evaluation of the submission's campaign.
      * Totals come from the option points frozen on each answer.
      */
     public function computeAndStore(Submission $submission): void
     {
-        $submission->loadMissing('answers', 'campaign.form.evaluations.questions');
+        $submission->loadMissing('answers', 'campaign.evaluations.questions');
 
         $pointsByQuestion = $submission->answers
             ->mapWithKeys(fn ($answer) => [$answer->question_id => (int) ($answer->option_points ?? 0)]);
 
-        foreach ($submission->campaign->form->evaluations as $evaluation) {
+        foreach ($submission->campaign->evaluations as $evaluation) {
             if (! $evaluation->isScored()) {
                 continue;
             }
